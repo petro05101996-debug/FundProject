@@ -4,6 +4,7 @@ import streamlit as st
 
 from investment_lab.data.legal_texts import NO_ADVICE_NOTICE, SESSION_DATA_NOTICE, SHORT_DISCLAIMER
 from investment_lab.data.mock_data import MODE_CARDS
+from investment_lab.data.profile_options import DRAWDOWN_OPTIONS, EXPERIENCE_OPTIONS, GOAL_OPTIONS, HORIZON_OPTIONS, LIQUIDITY_OPTIONS, option_index
 from investment_lab.domain.models import ScenarioAssumptions, UserConstraints
 from investment_lab.ui.components import action_bar, card, disclaimer, privacy_notice
 from investment_lab.ui.layout import go_to
@@ -30,13 +31,21 @@ def render() -> None:
         with a:
             profile["amount"] = st.number_input("Сумма", min_value=0.0, value=float(profile.get("amount", 100000)), step=1000.0)
             profile["currency"] = st.selectbox("Валюта", ["RUB", "USD", "EUR", "CNY"], index=["RUB", "USD", "EUR", "CNY"].index(profile.get("currency", "RUB")))
-            profile["horizon_months"] = st.slider("Горизонт, месяцев", 1, 240, int(profile.get("horizon_months", 36)))
+            horizon_options = list(HORIZON_OPTIONS)
+            profile["horizon_bucket"] = st.selectbox("Срок", horizon_options, index=option_index(horizon_options, profile.get("horizon_bucket", "3–5 лет"), 4))
+            profile["horizon_months"] = HORIZON_OPTIONS[profile["horizon_bucket"]]
         with b:
-            profile["goal"] = st.text_input("Цель", value=str(profile.get("goal", "Сравнить пользовательские сценарии")))
-            profile["may_need_money_early"] = st.checkbox("Деньги могут понадобиться раньше", value=bool(profile.get("may_need_money_early", False)))
-            profile["acceptable_drawdown_pct"] = st.slider("Допустимая просадка, %", 0.0, 100.0, float(profile.get("acceptable_drawdown_pct", 20.0)))
+            profile["goal"] = st.selectbox("Цель сценария", GOAL_OPTIONS, index=option_index(GOAL_OPTIONS, profile.get("goal", "Сравнить варианты"), 4))
+            liquidity_options = list(LIQUIDITY_OPTIONS)
+            profile["liquidity_need"] = st.selectbox("Могут ли деньги понадобиться раньше срока?", liquidity_options, index=option_index(liquidity_options, profile.get("liquidity_need", "Возможно через 3–6 месяцев"), 1))
+            liquidity_settings = LIQUIDITY_OPTIONS[profile["liquidity_need"]]
+            profile["may_need_money_early"] = bool(liquidity_settings["may_need_money_early"])
+            profile["min_liquidity_pct_30d"] = float(liquidity_settings["min_liquidity_pct_30d"])
         with c:
-            profile["experience"] = st.selectbox("Опыт пользователя", ["Начальный", "Средний", "Продвинутый"], index=["Начальный", "Средний", "Продвинутый"].index(profile.get("experience", "Средний")))
+            drawdown_options = list(DRAWDOWN_OPTIONS)
+            profile["drawdown_choice"] = st.selectbox("Какое временное снижение стоимости неприемлемо?", drawdown_options, index=option_index(drawdown_options, profile.get("drawdown_choice", "Больше 10%"), 4))
+            profile["acceptable_drawdown_pct"] = DRAWDOWN_OPTIONS[profile["drawdown_choice"]]
+            profile["experience"] = st.selectbox("Опыт пользователя", EXPERIENCE_OPTIONS, index=option_index(EXPERIENCE_OPTIONS, profile.get("experience", "Уже покупал вклады/облигации/фонды"), 2))
             profile["include_fees"] = st.checkbox("Учитывать комиссии", value=bool(profile.get("include_fees", True)))
             profile["include_taxes"] = st.checkbox("Учитывать налог", value=bool(profile.get("include_taxes", True)))
             profile["tax_pct"] = st.number_input("Ставка налога, %", 0.0, 100.0, float(profile.get("tax_pct", 13.0)), step=0.5)
@@ -47,7 +56,7 @@ def render() -> None:
 
     st.session_state["investment_lab_profile"] = profile
     st.session_state["investment_lab_assumptions"] = ScenarioAssumptions(horizon_years=max(1, int(profile["horizon_months"] / 12)), default_tax_pct=profile["tax_pct"])
-    st.session_state["investment_lab_constraints"] = UserConstraints(max_stress_loss_pct=profile["acceptable_drawdown_pct"])
+    st.session_state["investment_lab_constraints"] = UserConstraints(max_stress_loss_pct=profile["acceptable_drawdown_pct"], min_liquidity_pct_30d=profile.get("min_liquidity_pct_30d", 80.0))
 
     action_bar("Ваши данные защищены в рамках текущей сессии", SESSION_DATA_NOTICE)
     c1, c2 = st.columns([1, 1])

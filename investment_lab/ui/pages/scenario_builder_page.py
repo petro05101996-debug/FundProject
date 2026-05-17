@@ -23,12 +23,20 @@ def render() -> None:
     with b1:
         if st.button("Добавить сценарий", use_container_width=True):
             rows = st.session_state["investment_lab_scenarios"]
-            rows.append(default_instruments()[0] | {"scenario": f"Сценарий {len(set(r.get('scenario') for r in rows)) + 1}"})
-            st.rerun()
+            scenario_count = len({r.get("scenario") for r in rows})
+            if scenario_count >= 5:
+                st.warning("В MVP сравниваются до 5 пользовательских сценариев.")
+            else:
+                rows.append(default_instruments()[0] | {"scenario": f"Сценарий {scenario_count + 1}"})
+                st.rerun()
     with b2:
         if st.button("Добавить из шаблона", use_container_width=True):
-            st.session_state["investment_lab_scenarios"].extend(SCENARIO_TEMPLATES[0]["rows"])
-            st.rerun()
+            rows = st.session_state["investment_lab_scenarios"]
+            if len({r.get("scenario") for r in rows}) >= 5:
+                st.warning("Лимит MVP — до 5 сценариев в одном сравнении.")
+            else:
+                rows.extend(SCENARIO_TEMPLATES[0]["rows"])
+                st.rerun()
     with b3:
         if st.button("Очистить", use_container_width=True):
             st.session_state["investment_lab_scenarios"] = []

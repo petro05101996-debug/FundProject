@@ -12,7 +12,7 @@ from investment_lab.engine.scenario_comparator import analyze_scenarios
 from investment_lab.ui.components import disclaimer, kpi_card, risk_chips, table_card
 from investment_lab.ui.formatters import format_money, format_pct
 
-INSTRUMENT_TABS = ["Вклад", "Накопительный счёт", "ОФЗ", "Корпоративная облигация", "Фонд денежного рынка", "Индексный фонд"]
+INSTRUMENT_TABS = ["Вклад", "Накопительный счёт", "ОФЗ", "Корпоративная облигация", "Фонд денежного рынка", "Облигационный фонд", "Индексный фонд", "Акция как класс"]
 
 
 def render() -> None:
@@ -87,12 +87,13 @@ def _fund_tab(kind: str) -> None:
     left, right = st.columns([1.2, .85])
     with left:
         amount = st.number_input("Сумма", min_value=0.0, value=100000.0, step=1000.0, key=f"{kind}_amount")
-        expected = st.number_input("Ожидаемая доходность, %", value=6.0 if kind == "Фонд денежного рынка" else 10.0, step=0.25, key=f"{kind}_ret")
-        volatility = st.number_input("Волатильность, %", min_value=0.0, value=2.0 if kind == "Фонд денежного рынка" else 22.0, step=0.25, key=f"{kind}_vol")
-        fee = st.number_input("Комиссия фонда, %", min_value=0.0, value=0.3 if kind == "Фонд денежного рынка" else 0.8, step=0.05, key=f"{kind}_fee")
+        defaults = _fund_defaults(kind)
+        expected = st.number_input("Ожидаемая доходность, %", value=defaults["expected"], step=0.25, key=f"{kind}_ret")
+        volatility = st.number_input("Волатильность, %", min_value=0.0, value=defaults["volatility"], step=0.25, key=f"{kind}_vol")
+        fee = st.number_input("Комиссия фонда, %", min_value=0.0, value=defaults["fee"], step=0.05, key=f"{kind}_fee")
         currency = st.selectbox("Валюта", ["RUB", "USD", "EUR"], key=f"{kind}_cur")
-        if kind == "Индексный фонд": st.selectbox("Регион", ["Россия", "США", "Европа", "Глобальный"], key=f"{kind}_region")
-        months = st.slider("Срок, месяцев", 1, 240, 12 if kind == "Фонд денежного рынка" else 60, key=f"{kind}_months")
+        if kind in {"Индексный фонд", "Акция как класс"}: st.selectbox("Регион", ["Россия", "США", "Европа", "Глобальный"], key=f"{kind}_region")
+        months = st.slider("Срок, месяцев", 1, 240, defaults["months"], key=f"{kind}_months")
         tax = st.number_input("Налог, %", 0.0, 100.0, 13.0, key=f"{kind}_tax")
         liquidity = st.number_input("Биржевая ликвидность, дней", min_value=0, value=2, key=f"{kind}_liq")
     with right:
@@ -123,5 +124,15 @@ def _instrument_result(kind: str, amount: float, expected_return: float, volatil
 
 def _asset_class(kind: str) -> str:
     if kind in {"Вклад", "Накопительный счёт", "Фонд денежного рынка"}: return "Денежные средства"
-    if kind in {"ОФЗ", "Корпоративная облигация"}: return "Облигации"
+    if kind in {"ОФЗ", "Корпоративная облигация", "Облигационный фонд"}: return "Облигации"
     return "Акции"
+
+
+def _fund_defaults(kind: str) -> dict[str, float | int]:
+    if kind == "Фонд денежного рынка":
+        return {"expected": 6.0, "volatility": 2.0, "fee": 0.3, "months": 12}
+    if kind == "Облигационный фонд":
+        return {"expected": 8.0, "volatility": 7.0, "fee": 0.6, "months": 36}
+    if kind == "Акция как класс":
+        return {"expected": 10.0, "volatility": 28.0, "fee": 0.1, "months": 60}
+    return {"expected": 10.0, "volatility": 22.0, "fee": 0.8, "months": 60}

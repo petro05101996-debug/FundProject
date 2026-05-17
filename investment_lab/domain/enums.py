@@ -34,8 +34,11 @@ class InstrumentKind(str, Enum):
     OFZ = "ОФЗ"
     CORPORATE_BOND = "Корпоративная облигация"
     MONEY_MARKET_FUND = "Фонд денежного рынка"
+    BOND_FUND = "Облигационный фонд"
     INDEX_FUND = "Индексный фонд"
-    EQUITY_CLASS = "Акции как класс"
+    EQUITY_CLASS = "Акция как класс"
+    IIS = "ИИС"
+    PDS = "ПДС"
 
 
 SAFE_STATUS_ORDER = [
