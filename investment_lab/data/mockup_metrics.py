@@ -123,11 +123,11 @@ MOCKUP_OFZ = {
 }
 
 MOCKUP_PORTFOLIO = [
-    {"instrument": "Сбербанк (обычка)", "ticker": "SBER", "asset_class": "Акции", "market_value": 1_000_000.0, "expected_return_pct": 11.0, "volatility_pct": 27.0, "liquidity_days": 2, "annual_fee_pct": 0.06, "tax_pct": 13.0},
-    {"instrument": "ЛУКОЙЛ", "ticker": "LKOH", "asset_class": "Акции", "market_value": 800_000.0, "expected_return_pct": 10.0, "volatility_pct": 25.0, "liquidity_days": 2, "annual_fee_pct": 0.06, "tax_pct": 13.0},
-    {"instrument": "ОФЗ 26243", "ticker": "RU000A105YQ2", "asset_class": "Облигации", "market_value": 700_000.0, "expected_return_pct": 8.2, "volatility_pct": 7.0, "liquidity_days": 3, "annual_fee_pct": 0.03, "tax_pct": 13.0},
-    {"instrument": "FXMM", "ticker": "FXMM", "asset_class": "Денежные средства", "market_value": 250_000.0, "expected_return_pct": 6.0, "volatility_pct": 1.0, "liquidity_days": 1, "annual_fee_pct": 0.10, "tax_pct": 13.0},
-    {"instrument": "Золото", "ticker": "GLDRUB_TOM", "asset_class": "Товары", "market_value": 200_000.0, "expected_return_pct": 5.0, "volatility_pct": 18.0, "liquidity_days": 2, "annual_fee_pct": 0.25, "tax_pct": 13.0},
+    {"instrument": "Акция A", "ticker": "SHARE_A", "asset_class": "Акции", "market_value": 1_000_000.0, "expected_return_pct": 11.0, "volatility_pct": 27.0, "liquidity_days": 2, "annual_fee_pct": 0.06, "tax_pct": 13.0},
+    {"instrument": "Акция B", "ticker": "SHARE_B", "asset_class": "Акции", "market_value": 800_000.0, "expected_return_pct": 10.0, "volatility_pct": 25.0, "liquidity_days": 2, "annual_fee_pct": 0.06, "tax_pct": 13.0},
+    {"instrument": "Облигация A", "ticker": "BOND_A", "asset_class": "Облигации", "market_value": 700_000.0, "expected_return_pct": 8.2, "volatility_pct": 7.0, "liquidity_days": 3, "annual_fee_pct": 0.03, "tax_pct": 13.0},
+    {"instrument": "Денежный фонд A", "ticker": "MMF_A", "asset_class": "Денежные средства", "market_value": 250_000.0, "expected_return_pct": 6.0, "volatility_pct": 1.0, "liquidity_days": 1, "annual_fee_pct": 0.10, "tax_pct": 13.0},
+    {"instrument": "Товарный актив A", "ticker": "COMMODITY_A", "asset_class": "Товары", "market_value": 200_000.0, "expected_return_pct": 5.0, "volatility_pct": 18.0, "liquidity_days": 2, "annual_fee_pct": 0.25, "tax_pct": 13.0},
 ]
 
 MOCKUP_MISMATCH_NOTES = [

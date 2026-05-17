@@ -33,7 +33,7 @@ def render() -> None:
     main, side = st.columns([1.35, .75])
     with main:
         card(item["name"], f"{item['summary']} Горизонт: {item['horizon']}", badge=item["category"], strong=True)
-        st.markdown("<div class='lab-panel'><h3>Как формируется результат</h3><p>Инвестор → Инструмент → Доход / риск / ликвидность</p></div>", unsafe_allow_html=True)
+        st.markdown("<div class='lab-panel'><h3>Как формируется результат</h3><p>Деньги пользователя → Инструмент → Доход / риск / ликвидность → Проверки перед решением</p></div>", unsafe_allow_html=True)
         st.markdown("### Основные риски")
         for risk in item["risks"]: st.markdown(f"- {risk}")
         st.markdown("### Ликвидность")
@@ -49,7 +49,16 @@ def render() -> None:
         kpi_card("Ликвидность", str(item["liquidity_score"]), "Оценка 1–5")
         kpi_card("Сложность", str(item["complexity_score"]), "Оценка 1–5")
         kpi_card("Горизонт", item["horizon"], "Обычно рассматриваемый")
-        st.markdown("### Связанные инструменты")
+        st.markdown("### Что проверить")
+        for check in item["checks"][:4]:
+            st.write(f"- {check}")
+        related_rows = []
         for related in item["related"]:
             related_item = build_instrument_explanation(related)
-            card(related, related_item["summary"], badge=related_item["category"])
+            related_rows.append({
+                "Инструмент": related,
+                "Чем похож": related_item["category"],
+                "Чем отличается": related_item["summary"],
+                "Что проверить": "; ".join(related_item["checks"][:2]),
+            })
+        table_card("Похожие инструменты", pd.DataFrame(related_rows))

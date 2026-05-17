@@ -44,14 +44,29 @@ APP_CSS = """
 [data-testid="stSidebar"] h3 { color:#f8fbff; font-size:1.02rem; margin-bottom:.1rem; }
 [data-testid="stSidebar"] .stCaption, [data-testid="stSidebar"] p { color: var(--lab-muted); }
 [data-testid="stSidebar"] .stButton > button {
-  min-height: 30px;
-  padding: .15rem .65rem;
+  justify-content: flex-start;
+  min-height: 40px;
+  padding: .45rem .75rem;
+  border-radius: 14px;
   border-color: rgba(96,165,250,.16);
-  background: rgba(8, 26, 43, .64);
+  background: rgba(8, 26, 43, .34);
   color: #b7c7dc;
   box-shadow: none;
 }
-[data-testid="stSidebar"] .stButton > button:hover { border-color: var(--lab-cyan); color: #ecfeff; }
+[data-testid="stSidebar"] .stButton > button:hover { border-color: var(--lab-cyan); color: #ecfeff; background: rgba(8, 26, 43, .72); }
+[data-testid="stSidebar"] .stButton > button[kind="primary"],
+[data-testid="stSidebar"] .stButton [data-testid="baseButton-primary"] {
+  border-color: rgba(34,211,238,.52) !important;
+  border-left: 4px solid var(--lab-cyan) !important;
+  background: linear-gradient(135deg, rgba(34,211,238,.18), rgba(45,212,191,.08)) !important;
+  color: #ecfeff !important;
+  box-shadow: inset 0 0 0 1px rgba(34,211,238,.08), 0 10px 24px rgba(34,211,238,.08) !important;
+}
+[data-testid="stSidebar"] .stButton > button[kind="secondary"],
+[data-testid="stSidebar"] .stButton [data-testid="baseButton-secondary"] {
+  background: rgba(8, 26, 43, .34);
+  color: #b7c7dc;
+}
 .lab-shell {
   border: 1px solid var(--lab-border);
   border-radius: 28px;

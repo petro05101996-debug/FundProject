@@ -20,17 +20,20 @@ def render() -> None:
         st.markdown(
             "<span class='lab-badge'>◇ Финансовый сценарный анализатор</span>"
             "<h1>Проверьте <span class='accent'>инвестиционный сценарий</span><br>до покупки</h1>"
-            "<p>Сравнивайте свои сценарии, оценивайте риски, ликвидность, комиссии и налоги. "
-            "Проверяйте устойчивость портфеля в стресс-условиях без продажи инструментов.</p>",
+            "<p>Сравните выбранные вами варианты, увидьте риски, ликвидность, комиссии, налоги и плохой сценарий. "
+            "Без инвестиционных рекомендаций и без продажи инструментов.</p>",
             unsafe_allow_html=True,
         )
-        c1, c2 = st.columns([1.05, .95])
+        c1, c2, c3 = st.columns(3)
         with c1:
-            if st.button("↗ Начать проверку сценария", type="primary", use_container_width=True):
+            if st.button("↗ Проверить сценарий", type="primary", use_container_width=True):
                 go_to("Параметры сценария")
         with c2:
-            if st.button("⚖ Сравнить мои варианты", use_container_width=True):
+            if st.button("⚖ Сравнить варианты", use_container_width=True):
                 go_to("Сравнить мои варианты")
+        with c3:
+            if st.button("▣ Проверить портфель", use_container_width=True):
+                go_to("Проверить портфель")
         st.markdown(
             "<div class='lab-trust-row'>"
             "<div class='lab-trust-item'><span class='lab-trust-icon'>🔒</span>Данные остаются только у вас</div>"
@@ -40,21 +43,20 @@ def render() -> None:
             unsafe_allow_html=True,
         )
     with right:
-        st.markdown("<div class='lab-preview-dashboard'><h3>Сравнение сценариев</h3>", unsafe_allow_html=True)
+        st.markdown("<div class='lab-preview-dashboard'><h3>Мини-dashboard сравнения</h3>", unsafe_allow_html=True)
         st.markdown(
-            f"<div class='lab-page-kicker'>Сценарий A</div>"
-            f"<div class='lab-kpi-value'>{preview['projected_value']:,.0f} ₽</div>".replace(",", " ")
-            + f"<div class='lab-page-kicker'>ожидаемая стоимость · +{preview['growth_pct']:.1f}%</div>",
+            "<div class='lab-instrument-row'><span>Сценарий А<small>лучше по ликвидности</small></span><span class='lab-risk-dot'>ликвидность</span></div>"
+            "<div class='lab-instrument-row'><span>Сценарий Б<small>выше риск просадки</small></span><span class='lab-risk-dot'>просадка</span></div>"
+            "<div class='lab-instrument-row'><span>Сценарий В<small>нарушает срок</small></span><span class='lab-risk-dot'>срок</span></div>",
             unsafe_allow_html=True,
         )
         st.plotly_chart(scenario_projection_chart(summary, 5), use_container_width=True)
         st.markdown(
             "<div class='lab-metric-strip'>"
-            f"<div class='lab-mini-kpi'><div class='label'>Риск</div><div class='value'>{preview['stress_drawdown_pct']:.1f}%</div></div>"
-            f"<div class='lab-mini-kpi'><div class='label'>Макс. просадка</div><div class='value'>{preview['max_drawdown_pct']:.1f}%</div></div>"
-            f"<div class='lab-mini-kpi'><div class='label'>Ликвидность</div><div class='value'>{preview['liquidity']}</div></div>"
-            f"<div class='lab-mini-kpi'><div class='label'>Комиссия</div><div class='value'>{preview['commission_pct']:.2f}%</div></div>"
-            f"<div class='lab-mini-kpi'><div class='label'>Налоги</div><div class='value'>{preview['tax_pct']:.1f}%</div></div>"
+            "<span class='lab-risk-chip Medium'>ликвидность</span>"
+            "<span class='lab-risk-chip High'>просадка</span>"
+            "<span class='lab-risk-chip Medium'>комиссии</span>"
+            "<span class='lab-risk-chip Low'>налоги</span>"
             "</div>",
             unsafe_allow_html=True,
         )
@@ -79,9 +81,9 @@ def render() -> None:
         zip(
             steps,
             [
-                "Загрузите или создайте сценарии: укажите сумму, горизонт и инструменты.",
-                "Сервис рассчитает риск, ликвидность, комиссии, налоги и стресс-метрики.",
-                "Получите отчёт и сравните варианты по единым правилам расчёта.",
+                "Введите параметры и сценарии: укажите сумму, горизонт и инструменты.",
+                "Получите риск-флаги, стресс-тест, ликвидность, комиссии и налоги.",
+                "Сохраните прозрачный отчёт с допущениями и ограничениями расчёта.",
             ],
         ),
         start=1,
@@ -94,5 +96,6 @@ def render() -> None:
         bullet_card("Что делает сервис", WHAT_SERVICE_DOES, positive=True)
     with right2:
         bullet_card("Что сервис НЕ делает", WHAT_SERVICE_DOES_NOT_DO, positive=False)
+    st.markdown("<div class='lab-action-bar'><span>Без брокерской интеграции</span><span>Без кнопки Купить</span><span>Без инвестиционных рекомендаций</span><span>Только пользовательские сценарии</span></div>", unsafe_allow_html=True)
     disclaimer(PRIMARY_DISCLAIMER)
     privacy_notice(FOOTER_DISCLAIMER)
