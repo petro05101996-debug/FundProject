@@ -99,64 +99,65 @@ def required_instrument_columns() -> list[str]:
 
 
 def default_instruments() -> list[dict[str, object]]:
-    return [
-        {
-            "scenario": "Базовый сценарий",
-            "instrument": "Пользовательский инструмент A",
-            "ticker": "A",
-            "asset_class": "Акции",
-            "country": "Пользовательский ввод",
-            "currency": "RUB",
-            "market_value": 50000.0,
-            "expected_return_pct": 8.0,
-            "volatility_pct": 18.0,
-            "liquidity_days": 2,
-            "annual_fee_pct": 0.3,
-            "tax_pct": 13.0,
-        },
-        {
-            "scenario": "Базовый сценарий",
-            "instrument": "Пользовательский инструмент B",
-            "ticker": "B",
-            "asset_class": "Облигации",
-            "country": "Пользовательский ввод",
-            "currency": "RUB",
-            "market_value": 50000.0,
-            "expected_return_pct": 5.0,
-            "volatility_pct": 7.0,
-            "liquidity_days": 5,
-            "annual_fee_pct": 0.15,
-            "tax_pct": 13.0,
-        },
-        {
-            "scenario": "Защитный сценарий",
-            "instrument": "Пользовательский инструмент C",
-            "ticker": "C",
-            "asset_class": "Денежные средства",
-            "country": "Пользовательский ввод",
-            "currency": "RUB",
-            "market_value": 30000.0,
-            "expected_return_pct": 3.0,
-            "volatility_pct": 1.0,
-            "liquidity_days": 0,
-            "annual_fee_pct": 0.0,
-            "tax_pct": 13.0,
-        },
-        {
-            "scenario": "Защитный сценарий",
-            "instrument": "Пользовательский инструмент D",
-            "ticker": "D",
-            "asset_class": "Акции",
-            "country": "Пользовательский ввод",
-            "currency": "RUB",
-            "market_value": 70000.0,
-            "expected_return_pct": 9.0,
-            "volatility_pct": 24.0,
-            "liquidity_days": 3,
-            "annual_fee_pct": 0.45,
-            "tax_pct": 13.0,
-        },
+    """Default first-run data aligned with the provided scenario-builder mockup."""
+
+    rows: list[dict[str, object]] = []
+    scenario_specs = [
+        (
+            "Сценарий А",
+            [
+                ("Вклад", "CASH_A", "Денежные средства", 4_000_000.0, 7.0, 0.5, 1, 0.0),
+                ("Фонд денежного рынка", "MMF_A", "Денежные средства", 2_500_000.0, 6.3, 2.0, 2, 0.3),
+                ("ОФЗ", "OFZ_A", "Облигации", 2_000_000.0, 8.2, 6.0, 3, 0.1),
+                ("Корпоративная облигация", "CORP_A", "Облигации", 1_500_000.0, 10.5, 10.0, 15, 0.2),
+            ],
+        ),
+        (
+            "Сценарий Б",
+            [
+                ("Фонд денежного рынка", "MMF_B", "Денежные средства", 3_000_000.0, 6.2, 2.0, 2, 0.3),
+                ("ОФЗ", "OFZ_B", "Облигации", 3_000_000.0, 8.1, 6.0, 3, 0.1),
+                ("Корпоративная облигация", "CORP_B", "Облигации", 2_500_000.0, 10.7, 10.0, 15, 0.2),
+                ("Вклад", "CASH_B", "Денежные средства", 1_500_000.0, 7.0, 0.5, 1, 0.0),
+            ],
+        ),
+        (
+            "Сценарий В",
+            [
+                ("ОФЗ", "OFZ_C", "Облигации", 2_500_000.0, 8.2, 6.0, 3, 0.1),
+                ("Корпоративная облигация", "CORP_C", "Облигации", 2_500_000.0, 10.7, 10.0, 15, 0.2),
+                ("Фонд денежного рынка", "MMF_C", "Денежные средства", 2_500_000.0, 6.2, 2.0, 2, 0.3),
+                ("Вклад", "CASH_C", "Денежные средства", 2_500_000.0, 7.0, 0.5, 1, 0.0),
+            ],
+        ),
     ]
+    for scenario, instruments in scenario_specs:
+        for instrument, ticker, asset_class, value, expected, volatility, liquidity, fee in instruments:
+            rows.append(
+                {
+                    "scenario": scenario,
+                    "instrument": instrument,
+                    "ticker": ticker,
+                    "asset_class": asset_class,
+                    "country": "Пользовательский ввод",
+                    "currency": "RUB",
+                    "market_value": value,
+                    "expected_return_pct": expected,
+                    "volatility_pct": volatility,
+                    "liquidity_days": liquidity,
+                    "annual_fee_pct": fee,
+                    "tax_pct": 13.0,
+                }
+            )
+    return rows
+
+
+def default_portfolio() -> list[dict[str, object]]:
+    """Default portfolio positions transcribed from the portfolio mockup."""
+
+    from investment_lab.data.mockup_metrics import MOCKUP_PORTFOLIO
+
+    return [{"scenario": "Текущий портфель", "country": "Пользовательский ввод", "currency": "RUB", **row} for row in MOCKUP_PORTFOLIO]
 
 
 def normalize_asset_class(value: object) -> str:
