@@ -22,7 +22,7 @@ def liquidity_score(liquidity_days: float, asset_class: str = "") -> tuple[int, 
         score = 1
     label = "Высокая" if score >= 4 else "Средняя" if score >= 3 else "Низкая"
     note = "В стресс-сценарии ликвидность может снизиться на один уровень для рисковых активов."
-    if asset_class in {"Акции", "Криптоактивы", "Альтернативные"} and score > 1:
+    if asset_class in {"Акции", "Альтернативные"} and score > 1:
         note = "Для рисковых активов в стресс-сценарии принята пониженная ликвидность."
     return score, label, note
 
@@ -37,7 +37,7 @@ def complexity_score(asset_class: str, instrument: str = "", currency: str = "RU
         score = 3
     elif asset_class == "Акции":
         score = 4
-    elif asset_class in {"Криптоактивы", "Альтернативные"}:
+    elif asset_class in {"Альтернативные"}:
         score = 5
     else:
         score = 2
@@ -65,7 +65,7 @@ def risk_score(asset_class: str, volatility_pct: float, stress_loss_pct: float =
         drivers.append("средняя волатильность")
     elif vol >= 5:
         score += 1
-    if asset_class in {"Акции", "Криптоактивы", "Альтернативные"}:
+    if asset_class in {"Акции", "Альтернативные"}:
         score += 1
         drivers.append("класс актива")
     if abs(float(stress_loss_pct)) >= 25:

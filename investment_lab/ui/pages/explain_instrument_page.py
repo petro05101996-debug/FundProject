@@ -13,7 +13,7 @@ def render() -> None:
     st.markdown("## Объяснить инструмент")
     disclaimer(EDUCATIONAL_DISCLAIMER)
     query = st.text_input("Поиск инструмента, например: ОФЗ, фонд, облигации...")
-    categories = ["Вклад", "ОФЗ", "Корпоративная облигация", "Фонды", "Акции как класс"]
+    categories = ["Вклад", "ОФЗ", "Корпоративная облигация", "Фонды", "Акции как класс", "ИИС", "ПДС"]
     cols = st.columns(len(categories))
     selected = st.session_state.get("explain_selected", "ОФЗ")
     for col, category in zip(cols, categories):
