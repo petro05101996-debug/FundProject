@@ -10,8 +10,7 @@ from investment_lab.ui.layout import go_to
 
 
 def render() -> None:
-    st.markdown("## Параметры пользовательского сценария")
-    st.caption("Выберите режим анализа и задайте параметры сценария")
+    st.markdown("<div class='lab-page-header'><div><h2>Параметры пользовательского сценария</h2><div class='lab-page-kicker'>Выберите режим анализа и задайте параметры сценария</div></div><span class='lab-pill'>Рабочее пространство</span></div>", unsafe_allow_html=True)
     disclaimer(SHORT_DISCLAIMER)
 
     st.markdown("### Режим анализа")
@@ -26,7 +25,7 @@ def render() -> None:
     left, right = st.columns([1.45, .8])
     profile = st.session_state["investment_lab_profile"]
     with left:
-        st.markdown("<div class='lab-panel'><h3>Основная форма</h3>", unsafe_allow_html=True)
+        st.markdown("<div class='lab-panel'><h3>Параметры сценария</h3><p>Укажите вводные данные и предпочтения для анализа.</p>", unsafe_allow_html=True)
         a, b, c = st.columns(3)
         with a:
             profile["amount"] = st.number_input("Сумма", min_value=0.0, value=float(profile.get("amount", 100000)), step=1000.0)
@@ -37,7 +36,7 @@ def render() -> None:
             profile["may_need_money_early"] = st.checkbox("Деньги могут понадобиться раньше", value=bool(profile.get("may_need_money_early", False)))
             profile["acceptable_drawdown_pct"] = st.slider("Допустимая просадка, %", 0.0, 100.0, float(profile.get("acceptable_drawdown_pct", 20.0)))
         with c:
-            profile["experience"] = st.selectbox("Опыт пользователя", ["Начальный", "Средний", "Продвинутый"], index=0)
+            profile["experience"] = st.selectbox("Опыт пользователя", ["Начальный", "Средний", "Продвинутый"], index=["Начальный", "Средний", "Продвинутый"].index(profile.get("experience", "Средний")))
             profile["include_fees"] = st.checkbox("Учитывать комиссии", value=bool(profile.get("include_fees", True)))
             profile["include_taxes"] = st.checkbox("Учитывать налог", value=bool(profile.get("include_taxes", True)))
             profile["tax_pct"] = st.number_input("Ставка налога, %", 0.0, 100.0, float(profile.get("tax_pct", 13.0)), step=0.5)

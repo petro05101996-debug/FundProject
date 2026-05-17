@@ -4,7 +4,7 @@ from __future__ import annotations
 import streamlit as st
 
 from investment_lab.data.legal_texts import FOOTER_DISCLAIMER, PRIMARY_DISCLAIMER
-from investment_lab.domain.models import ScenarioAssumptions, UserConstraints, default_instruments
+from investment_lab.domain.models import ScenarioAssumptions, UserConstraints, default_instruments, default_portfolio
 from investment_lab.ui.styles import APP_CSS
 
 PAGES = [
@@ -30,19 +30,19 @@ def init_session_state() -> None:
         "investment_lab_page": "Лендинг",
         "investment_lab_mode": "Сравнить мои варианты",
         "investment_lab_profile": {
-            "amount": 100000.0,
+            "amount": 10000000.0,
             "currency": "RUB",
-            "horizon_months": 36,
-            "goal": "Сравнить пользовательские сценарии",
+            "horizon_months": 60,
+            "goal": "Рост капитала",
             "may_need_money_early": False,
             "acceptable_drawdown_pct": 20.0,
-            "experience": "Начальный",
+            "experience": "Средний",
             "include_fees": True,
             "include_taxes": True,
             "tax_pct": 13.0,
         },
         "investment_lab_scenarios": default_instruments(),
-        "investment_lab_portfolio": default_instruments()[:2],
+        "investment_lab_portfolio": default_portfolio(),
         "investment_lab_results": None,
         "investment_lab_report_ready": False,
         "investment_lab_assumptions": ScenarioAssumptions(),
@@ -55,17 +55,20 @@ def init_session_state() -> None:
 def apply_shell() -> None:
     st.markdown(APP_CSS, unsafe_allow_html=True)
     st.markdown(
-        "<div class='lab-topbar'><div class='lab-brand'><div class='lab-brand-title'>▣ Investment Scenario Lab</div>"
-        "<div class='lab-brand-subtitle'>Сценарный анализ • риск-паспорт • прозрачный отчёт</div></div>"
-        "<div class='lab-topnav'><span>Возможности</span><span>Как это работает</span><span>Примеры</span><span>База знаний</span><span>О проекте</span></div>"
-        "<div><span class='lab-pill'>🌙 Graphite mode</span> <span class='lab-pill'>MVP</span> <span class='lab-pill'>Сервисный вход</span></div></div>",
+        "<div class='lab-topbar'>"
+        "<div class='lab-brand'><div class='lab-brand-mark'>▱</div><div class='lab-brand-text'>"
+        "<div class='lab-brand-title'>Investment Scenario Lab</div>"
+        "<div class='lab-brand-subtitle'>Финансовый сценарный анализатор</div></div></div>"
+        "<div class='lab-topnav'><span>Возможности</span><span>Как это работает</span><span>Тарифы</span><span>Примеры</span><span>База знаний</span><span>О проекте</span></div>"
+        "<div class='lab-top-actions'><span class='lab-icon-btn'>☾</span><span class='lab-pill'>Войти</span><span class='lab-pill lab-primary-pill'>Войти в сервис</span></div>"
+        "</div>",
         unsafe_allow_html=True,
     )
 
 
 def sidebar_navigation() -> str:
     with st.sidebar:
-        st.markdown("### ▣ Investment Lab")
+        st.markdown("### ◈ Investment Scenario Lab")
         st.caption("Финансовый сценарный анализатор")
         page = st.session_state["investment_lab_page"]
         for group, items in NAV_GROUPS.items():
@@ -76,7 +79,8 @@ def sidebar_navigation() -> str:
                     continue
                 active = item == page
                 css = "lab-nav-item lab-nav-item-active" if active else "lab-nav-item"
-                st.markdown(f"<div class='{css}'>{'●' if active else '○'} {item}</div>", unsafe_allow_html=True)
+                icon = {'Лендинг': '⌂', 'Параметры сценария': '◫', 'Проверить инструмент': '⌁', 'Сравнить мои варианты': '⚖', 'Проверить портфель': '▣', 'Итог по сценариям': '☷', 'Аналитический отчёт': '▤', 'Объяснить инструмент': 'ⓘ'}.get(item, "○")
+                st.markdown(f"<div class='{css}'>{icon} {item}</div>", unsafe_allow_html=True)
                 if st.button("Открыть", key=f"nav_{item}", use_container_width=True):
                     st.session_state["investment_lab_page"] = item
                     page = item

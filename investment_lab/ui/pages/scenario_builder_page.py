@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import html
 
 import pandas as pd
 import streamlit as st
@@ -15,9 +16,9 @@ from investment_lab.ui.layout import go_to
 
 
 def render() -> None:
-    st.markdown("## Сравнить мои варианты")
+    st.markdown("<div class='lab-page-header'><div><h2>Сравнить мои варианты</h2><div class='lab-page-kicker'>Добавьте до 5 сценариев для сравнения по доходности, риску, ликвидности и другим параметрам.</div></div><span class='lab-pill'>Конструктор сценариев</span></div>", unsafe_allow_html=True)
     disclaimer(SHORT_DISCLAIMER)
-    st.markdown("<div class='lab-action-bar'><span>Добавьте сценарий, шаблон или CSV</span><span>Данные хранятся только в текущей сессии</span></div>", unsafe_allow_html=True)
+    st.markdown("<div class='lab-action-bar'><span>⚠ Внимание к концентрации и ликвидности</span><span>Данные хранятся только в текущей сессии</span></div>", unsafe_allow_html=True)
     b1, b2, b3 = st.columns(3)
     with b1:
         if st.button("Добавить сценарий", use_container_width=True):
@@ -44,9 +45,33 @@ def render() -> None:
         return
 
     st.markdown("### Карточки сценариев")
-    for scenario_name, scenario_df in data.groupby("scenario"):
-        total = scenario_df["market_value"].sum()
-        card(str(scenario_name), f"Инструментов: {len(scenario_df)} · сумма: {total:,.0f} ₽".replace(",", " "), badge="Сценарий")
+    scenario_groups = list(data.groupby("scenario"))
+    for index in range(0, len(scenario_groups), 3):
+        cols = st.columns(3)
+        for col, (scenario_name, scenario_df) in zip(cols, scenario_groups[index:index + 3]):
+            with col:
+                total = scenario_df["market_value"].sum()
+                shares = scenario_df["market_value"].div(total).fillna(0).mul(100).round(0).astype(int).tolist()[:4] if total else []
+                share_badges = "".join(f"<span class='lab-share-pill'>{share}%</span>" for share in shares)
+                rows = []
+                for _, row in scenario_df.iterrows():
+                    amount = f"{row['market_value']:,.0f} ₽".replace(",", " ")
+                    share = int(round(row["market_value"] / total * 100)) if total else 0
+                    rows.append(
+                        "<div class='lab-instrument-row'>"
+                        f"<span>{html.escape(str(row['instrument']))}<small>{amount} · {share}%</small></span>"
+                        f"<span class='lab-risk-dot'>{html.escape(str(row['asset_class']))}</span>"
+                        "</div>"
+                    )
+                st.markdown(
+                    f"<div class='lab-card {'lab-card-strong' if index == 0 else ''}'>"
+                    f"<h3>{html.escape(str(scenario_name))} ✎</h3>"
+                    f"<div class='lab-page-kicker'>Общая сумма</div><div class='lab-kpi-value'>{total:,.0f} ₽</div>".replace(",", " ")
+                    + f"<div class='lab-page-kicker'>Инструменты ({len(scenario_df)})</div><div>{share_badges}</div>"
+                    + "".join(rows)
+                    + "<div class='lab-add-line'>＋ Добавить инструмент</div></div>",
+                    unsafe_allow_html=True,
+                )
 
     st.markdown("<div class='lab-table-card'><h3>Редактирование сценариев</h3>", unsafe_allow_html=True)
     edited = st.data_editor(

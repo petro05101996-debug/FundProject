@@ -3,7 +3,7 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from investment_lab.domain.models import SUPPORTED_ASSET_CLASSES, default_instruments, required_instrument_columns
+from investment_lab.domain.models import SUPPORTED_ASSET_CLASSES, default_instruments, default_portfolio, required_instrument_columns
 from investment_lab.engine.scenario_comparator import analyze_scenarios
 from investment_lab.ui.charts import allocation_donut
 from investment_lab.ui.components import disclaimer, empty_state, kpi_card, privacy_notice, risk_chips, table_card
@@ -12,8 +12,7 @@ from investment_lab.ui.layout import go_to
 
 
 def render() -> None:
-    st.markdown("## Проверить портфель")
-    st.caption("Анализ структуры существующего портфеля, введённого вручную, без интеграции с брокером.")
+    st.markdown("<div class='lab-page-header'><div><h2>Проверить портфель</h2><div class='lab-page-kicker'>Анализ структуры существующего портфеля, введённого вручную, без интеграции с брокером.</div></div><span class='lab-pill'>Портфельный контроль</span></div>", unsafe_allow_html=True)
     disclaimer(SHORT_DISCLAIMER)
     privacy_notice(FOOTER_DISCLAIMER)
     cta1, cta2, cta3 = st.columns(3)
@@ -23,7 +22,7 @@ def render() -> None:
             st.rerun()
     with cta2:
         if st.button("Добавить из шаблона", use_container_width=True):
-            st.session_state["investment_lab_portfolio"] = default_instruments()[:2]
+            st.session_state["investment_lab_portfolio"] = default_portfolio()
             st.rerun()
     with cta3:
         if st.button("Очистить", use_container_width=True):
@@ -79,7 +78,7 @@ def render() -> None:
 
 def _ensure_portfolio_df(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
-        df = pd.DataFrame(default_instruments()[:2])
+        df = pd.DataFrame(default_portfolio())
     for column in required_instrument_columns():
         if column not in df.columns:
             df[column] = "Текущий портфель" if column == "scenario" else 0
