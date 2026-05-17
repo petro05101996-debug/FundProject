@@ -19,8 +19,9 @@ def render() -> None:
     for col, mode in zip(cols, MODE_CARDS):
         with col:
             active = st.session_state["investment_lab_mode"] == mode["title"]
-            card(("✓ " if active else "") + mode["title"], mode["description"], badge="Активно" if active else "Режим", strong=active)
-            if st.button("Выбрать", key=f"profile_{mode['key']}", use_container_width=True):
+            outcome = mode.get("outcome", "получите понятный результат и риск-флаги")
+            card(("✓ " if active else "") + mode["title"], f"{mode['description']} Что получите: {outcome}", badge="Выбранный режим" if active else "Режим", strong=active)
+            if st.button("Выбрать режим", key=f"profile_{mode['key']}", use_container_width=True, type="primary" if active else "secondary"):
                 st.session_state["investment_lab_mode"] = mode["title"]
 
     left, right = st.columns([1.45, .8])
@@ -29,13 +30,13 @@ def render() -> None:
         st.markdown("<div class='lab-panel'><h3>Параметры сценария</h3><p>Укажите вводные данные и предпочтения для анализа.</p>", unsafe_allow_html=True)
         a, b, c = st.columns(3)
         with a:
-            profile["amount"] = st.number_input("Сумма", min_value=0.0, value=float(profile.get("amount", 100000)), step=1000.0)
+            profile["amount"] = st.number_input("Сумма", min_value=0.0, value=float(profile.get("amount", 500000)), step=1000.0)
             profile["currency"] = st.selectbox("Валюта", ["RUB", "USD", "EUR", "CNY"], index=["RUB", "USD", "EUR", "CNY"].index(profile.get("currency", "RUB")))
             horizon_options = list(HORIZON_OPTIONS)
-            profile["horizon_bucket"] = st.selectbox("Срок", horizon_options, index=option_index(horizon_options, profile.get("horizon_bucket", "3–5 лет"), 4))
+            profile["horizon_bucket"] = st.selectbox("Срок", horizon_options, index=option_index(horizon_options, profile.get("horizon_bucket", "6–12 месяцев"), 2))
             profile["horizon_months"] = HORIZON_OPTIONS[profile["horizon_bucket"]]
         with b:
-            profile["goal"] = st.selectbox("Цель сценария", GOAL_OPTIONS, index=option_index(GOAL_OPTIONS, profile.get("goal", "Сравнить варианты"), 4))
+            profile["goal"] = st.selectbox("Цель сценария", GOAL_OPTIONS, index=option_index(GOAL_OPTIONS, profile.get("goal", "Сохранить деньги"), 0))
             liquidity_options = list(LIQUIDITY_OPTIONS)
             profile["liquidity_need"] = st.selectbox("Могут ли деньги понадобиться раньше срока?", liquidity_options, index=option_index(liquidity_options, profile.get("liquidity_need", "Возможно через 3–6 месяцев"), 1))
             liquidity_settings = LIQUIDITY_OPTIONS[profile["liquidity_need"]]
@@ -43,28 +44,52 @@ def render() -> None:
             profile["min_liquidity_pct_30d"] = float(liquidity_settings["min_liquidity_pct_30d"])
         with c:
             drawdown_options = list(DRAWDOWN_OPTIONS)
-            profile["drawdown_choice"] = st.selectbox("Какое временное снижение стоимости неприемлемо?", drawdown_options, index=option_index(drawdown_options, profile.get("drawdown_choice", "Больше 10%"), 4))
+            profile["drawdown_choice"] = st.selectbox("Какое временное снижение стоимости неприемлемо?", drawdown_options, index=option_index(drawdown_options, profile.get("drawdown_choice", "До 5%"), 2))
             profile["acceptable_drawdown_pct"] = DRAWDOWN_OPTIONS[profile["drawdown_choice"]]
-            profile["experience"] = st.selectbox("Опыт пользователя", EXPERIENCE_OPTIONS, index=option_index(EXPERIENCE_OPTIONS, profile.get("experience", "Уже покупал вклады/облигации/фонды"), 2))
+            profile["experience"] = st.selectbox("Опыт пользователя", EXPERIENCE_OPTIONS, index=option_index(EXPERIENCE_OPTIONS, profile.get("experience", "Не разбираюсь"), 0))
             profile["include_fees"] = st.checkbox("Учитывать комиссии", value=bool(profile.get("include_fees", True)))
             profile["include_taxes"] = st.checkbox("Учитывать налог", value=bool(profile.get("include_taxes", True)))
             profile["tax_pct"] = st.number_input("Ставка налога, %", 0.0, 100.0, float(profile.get("tax_pct", 13.0)), step=0.5)
         st.markdown("</div>", unsafe_allow_html=True)
     with right:
-        st.markdown("<div class='lab-right-panel'><h3>Краткие правила расчёта</h3><ul><li>Ожидаемая доходность — пользовательское допущение.</li><li>Риск и волатильность считаются приближённо.</li><li>Ликвидность берётся из введённых дней.</li><li>Комиссии и издержки вычитаются из результата.</li><li>Налоги считаются по пользовательской ставке.</li><li>Стресс-сценарии статические.</li></ul></div>", unsafe_allow_html=True)
+        next_hint = _next_step_hint(st.session_state["investment_lab_mode"])
+        st.markdown(
+            f"<div class='lab-right-panel'><h3>Ваш профиль сценария</h3>"
+            f"<p><strong>Сумма:</strong> {profile.get('amount', 0):,.0f} {profile.get('currency', 'RUB')}</p>".replace(',', ' ')
+            + f"<p><strong>Срок:</strong> {profile.get('horizon_bucket')}</p>"
+            + f"<p><strong>Цель:</strong> {profile.get('goal')}</p>"
+            + f"<h3>Предварительные ограничения</h3><p>Ликвидность до 30 дней: {profile.get('min_liquidity_pct_30d', 80):.0f}%</p>"
+            + f"<p>Допустимая просадка: до {profile.get('acceptable_drawdown_pct', 5):.0f}%</p>"
+            + f"<p>Комиссии: {'учитываются' if profile.get('include_fees', True) else 'не учитываются'} · налоги: {'учитываются' if profile.get('include_taxes', True) else 'не учитываются'}</p>"
+            + f"<h3>Что будет проверено</h3><p>{next_hint}</p></div>",
+            unsafe_allow_html=True,
+        )
         privacy_notice(NO_ADVICE_NOTICE)
 
     st.session_state["investment_lab_profile"] = profile
     st.session_state["investment_lab_assumptions"] = ScenarioAssumptions(horizon_years=max(1, int(profile["horizon_months"] / 12)), default_tax_pct=profile["tax_pct"])
     st.session_state["investment_lab_constraints"] = UserConstraints(max_stress_loss_pct=profile["acceptable_drawdown_pct"], min_liquidity_pct_30d=profile.get("min_liquidity_pct_30d", 80.0))
 
+    st.markdown("<div class='lab-action-bar'><span>1. Параметры</span><span>→ 2. Сценарии</span><span>→ 3. Расчёт</span><span>→ 4. Отчёт</span></div>", unsafe_allow_html=True)
     action_bar("Ваши данные защищены в рамках текущей сессии", SESSION_DATA_NOTICE)
-    c1, c2 = st.columns([1, 1])
+    c0, c1, c2 = st.columns([1, 1, 1])
+    with c0:
+        if st.button("Назад на лендинг", use_container_width=True):
+            go_to("Лендинг")
     with c1:
-        if st.button("Продолжить к сценариям", type="primary", use_container_width=True):
+        if st.button("Продолжить", type="primary", use_container_width=True):
             target = next((mode["page"] for mode in MODE_CARDS if mode["title"] == st.session_state["investment_lab_mode"]), "Сравнить мои варианты")
             go_to(target)
     with c2:
-        if st.button("Очистить данные", use_container_width=True):
+        if st.button("Очистить", use_container_width=True):
             st.session_state["investment_lab_profile"] = {}
             st.rerun()
+
+
+def _next_step_hint(mode: str) -> str:
+    return {
+        "Проверить инструмент": "введите параметры инструмента → получите паспорт риска",
+        "Сравнить мои варианты": "добавьте 2–5 сценариев → получите таблицу и стресс-тест",
+        "Проверить портфель": "введите позиции → получите концентрацию, ликвидность, стресс",
+        "Объяснить инструмент": "выберите инструмент → получите простое объяснение",
+    }.get(mode, "добавьте сценарии → получите сравнение и отчёт")

@@ -30,17 +30,17 @@ def init_session_state() -> None:
         "investment_lab_page": "Лендинг",
         "investment_lab_mode": "Сравнить мои варианты",
         "investment_lab_profile": {
-            "amount": 10000000.0,
+            "amount": 500000.0,
             "currency": "RUB",
-            "horizon_months": 60,
-            "horizon_bucket": "3–5 лет",
-            "goal": "Сравнить варианты",
+            "horizon_months": 12,
+            "horizon_bucket": "6–12 месяцев",
+            "goal": "Сохранить деньги",
             "liquidity_need": "Возможно через 3–6 месяцев",
             "may_need_money_early": True,
             "min_liquidity_pct_30d": 80.0,
-            "drawdown_choice": "Больше 10%",
-            "acceptable_drawdown_pct": 20.0,
-            "experience": "Уже покупал вклады/облигации/фонды",
+            "drawdown_choice": "До 5%",
+            "acceptable_drawdown_pct": 5.0,
+            "experience": "Не разбираюсь",
             "include_fees": True,
             "include_taxes": True,
             "tax_pct": 13.0,
@@ -84,8 +84,8 @@ def sidebar_navigation() -> str:
                 active = item == page
                 css = "lab-nav-item lab-nav-item-active" if active else "lab-nav-item"
                 icon = {'Лендинг': '⌂', 'Параметры сценария': '◫', 'Проверить инструмент': '⌁', 'Сравнить мои варианты': '⚖', 'Проверить портфель': '▣', 'Итог по сценариям': '☷', 'Аналитический отчёт': '▤', 'Объяснить инструмент': 'ⓘ'}.get(item, "○")
-                st.markdown(f"<div class='{css}'>{icon} {item}</div>", unsafe_allow_html=True)
-                if st.button("Открыть", key=f"nav_{item}", use_container_width=True):
+                label = f"{icon} {item}"
+                if st.button(label, key=f"nav_{item}", use_container_width=True, type="primary" if active else "secondary"):
                     st.session_state["investment_lab_page"] = item
                     page = item
         st.markdown("---")

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from html import escape
+
 import pandas as pd
 import streamlit as st
 
@@ -29,15 +31,19 @@ def render() -> None:
 
     assumptions = st.session_state["investment_lab_assumptions"]
     display_summary = _summary_with_what_if(result["summary"].copy(), assumptions.horizon_years)
-    st.markdown("### What-if проверка")
-    what_if_view, what_if_flags, what_if_cashflows = _render_what_if_controls(
-        display_summary,
-        result["flags"],
-        assumptions,
-        st.session_state["investment_lab_constraints"],
+    display_summary = display_summary.sort_values("constraint_fit_score", ascending=False).reset_index(drop=True)
+    leader = display_summary.iloc[0]
+    cashflows = build_cashflow_table(display_summary, assumptions.horizon_years)
+    leader_cashflows = cashflows[cashflows["scenario"] == leader["scenario"]] if "scenario" in cashflows.columns else cashflows
+    reasons = (
+        f"ликвидность {leader['liquid_within_30d_pct']:.1f}%, "
+        f"стресс-просадка {leader['worst_stress_impact_pct']:.1f}%, "
+        f"концентрация {leader['max_position_pct']:.1f}%"
     )
-    leader = what_if_view.iloc[0]
-    st.markdown(f"<div class='lab-panel lab-card-strong'><h3>Сценарий «{leader['scenario']}» лучше соответствует заданным пользователем ограничениям по ликвидности и допустимой просадке среди выбранных сценариев.</h3><p>{REPORT_DISCLAIMER}</p></div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div class='lab-panel lab-card-strong'><h3>Сценарий «{escape(str(leader['scenario']))}» имеет наибольшее соответствие введённым ограничениям среди пользовательских сценариев: {escape(reasons)}.</h3><p>{escape(REPORT_DISCLAIMER)}</p></div>",
+        unsafe_allow_html=True,
+    )
 
     c1, c2, c3, c4 = st.columns(4)
     with c1: kpi_card("Диапазон результата", f"{leader['stress_value']:,.0f}–{leader['projected_value']:,.0f} ₽".replace(",", " "), "Плохой и базовый сценарии")
@@ -48,23 +54,36 @@ def render() -> None:
     with c5: kpi_card("Сложность", str(leader["complexity_label"]), "Средняя оценка")
     with c6: kpi_card("Комиссии", f"{leader['fee_and_commission_drag_pct']:.2f}%", "Годовая нагрузка")
     with c7: kpi_card("Налоги", f"{leader['tax_drag_pct']:.2f}%", "По пользовательской ставке")
-    with c8: kpi_card("Денежный поток", f"{what_if_cashflows['income'].sum():,.0f} ₽".replace(",", " "), "Расчётный доход за горизонт")
+    with c8: kpi_card("Денежный поток", f"{leader_cashflows['income'].sum():,.0f} ₽".replace(",", " "), "Расчётный доход сценария с максимальным соответствием за горизонт")
 
     main, side = st.columns([1.55, .75])
     with main:
-        table_card("Таблица сравнения сценариев", what_if_view[["scenario", "projected_value", "stress_value", "liquidity_label", "risk_label", "max_position_pct", "status"]].round(2))
-        st.plotly_chart(scenario_projection_chart(what_if_view, assumptions.horizon_years), use_container_width=True)
-        st.plotly_chart(drawdown_chart(what_if_view), use_container_width=True)
-        st.plotly_chart(cashflow_donut(what_if_cashflows), use_container_width=True)
-
+        table_card("Таблица сравнения сценариев", _summary_for_user(display_summary))
+        st.plotly_chart(scenario_projection_chart(display_summary, assumptions.horizon_years), use_container_width=True)
+        st.plotly_chart(drawdown_chart(display_summary), use_container_width=True)
+        st.plotly_chart(cashflow_donut(cashflows), use_container_width=True)
     with side:
-        st.markdown("<div class='lab-right-panel'><h3>Риск-флаги</h3>", unsafe_allow_html=True)
-        risk_chips(what_if_flags)
+        st.markdown("<div class='lab-right-panel'><h3>Риск-паспорт</h3>", unsafe_allow_html=True)
+        kpi_card("Риск", str(leader["risk_label"]), "Интегральная оценка")
+        kpi_card("Ликвидность", str(leader["liquidity_label"]), "Оценка 1–5")
+        kpi_card("Сложность", str(leader["complexity_label"]), "Оценка 1–5")
+        st.markdown("<h3>Риск-флаги</h3>", unsafe_allow_html=True)
+        risk_chips(result["flags"])
         st.markdown("<h3>Чек-лист перед самостоятельным решением</h3>", unsafe_allow_html=True)
         for item in REPORT_CHECKLIST[:4]:
             st.markdown(f"- [ ] {item}")
         st.markdown("</div>", unsafe_allow_html=True)
         st.plotly_chart(portfolio_allocation_donut(result["asset_allocation"], scenario=str(leader["scenario"]), total_value=float(leader["portfolio_value"])), use_container_width=True)
+
+    st.markdown("### Техническая чувствительность")
+    st.info("Это техническая проверка чувствительности, а не предложенный портфель. Сервис не предлагает эти доли: он показывает, как изменятся метрики, если пользователь сам задаст условные параметры.")
+    what_if_view, what_if_flags, what_if_cashflows = _render_what_if_controls(
+        display_summary,
+        result["flags"],
+        assumptions,
+        st.session_state["investment_lab_constraints"],
+    )
+    table_card("Результат технической чувствительности", _summary_for_user(what_if_view))
 
     with st.expander("Показать расчёты"):
         table_card("Позиции", result["positions"].round(2))
@@ -74,6 +93,20 @@ def render() -> None:
     with st.expander("Ограничения анализа"):
         for limitation in result["limitations"]:
             st.write(f"- {limitation}")
+
+
+def _summary_for_user(summary: pd.DataFrame) -> pd.DataFrame:
+    columns = {
+        "scenario": "Сценарий",
+        "projected_value": "Базовая стоимость",
+        "stress_value": "Стоимость после стресса",
+        "liquidity_label": "Ликвидность",
+        "risk_label": "Риск",
+        "max_position_pct": "Концентрация, %",
+        "status": "Статус по ограничениям",
+    }
+    existing = [column for column in columns if column in summary.columns]
+    return summary[existing].rename(columns=columns).round(2)
 
 
 def _summary_with_what_if(summary: pd.DataFrame, horizon_years: int) -> pd.DataFrame:
@@ -96,6 +129,9 @@ def _render_what_if_controls(
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Apply transparent what-if overlays without changing saved user data."""
 
+    scenario_options = summary["scenario"].astype(str).tolist() if "scenario" in summary.columns else []
+    base_scenario = st.selectbox("Базовый сценарий для what-if", scenario_options, help="Выберите пользовательский сценарий, относительно которого будет построена техническая проверка.") if scenario_options else None
+
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         rate_shift = st.slider("Ставка, п.п.", -2.0, 2.0, 0.0, 0.5, help="Сдвигает расчётную доходность на выбранное число процентных пунктов.")
@@ -106,7 +142,8 @@ def _render_what_if_controls(
     with col4:
         inflation_shift = st.slider("Инфляция, п.п.", 0.0, 5.0, 0.0, 0.5, help="Снижает расчётную реальную доходность.")
 
-    with st.expander("What-if распределение по классам", expanded=False):
+    with st.expander("Техническая чувствительность к условным долям", expanded=False):
+        st.caption("Сервис не предлагает эти доли. Это демонстрация того, как изменятся метрики, если пользователь сам задаст условное распределение.")
         a, b, c, d = st.columns(4)
         with a:
             deposit_share = st.slider("Доля вклада", 0, 100, 40, 5)
@@ -116,6 +153,10 @@ def _render_what_if_controls(
             fund_share = st.slider("Доля фонда", 0, 100, 20, 5)
         with d:
             equity_share = st.slider("Доля акций", 0, 100, 15, 5)
+        share_sum = deposit_share + ofz_share + fund_share + equity_share
+        st.write(f"Сумма долей: {share_sum}%")
+        if share_sum != 100:
+            st.warning("Сумма долей отличается от 100%, расчёт будет нормализован.")
 
     adjusted = summary.copy()
     adjusted["net_return_pct"] = adjusted["net_return_pct"] + rate_shift - inflation_shift
@@ -124,8 +165,9 @@ def _render_what_if_controls(
     adjusted["projected_value"] = adjusted["portfolio_value"] * (1 + adjusted["net_return_pct"] / 100.0) ** assumptions.horizon_years
     adjusted["stress_value"] = adjusted["projected_value"] * (1 + adjusted["worst_stress_impact_pct"] / 100.0)
 
+    base_row = adjusted[adjusted["scenario"].astype(str) == str(base_scenario)].iloc[0] if base_scenario else adjusted.iloc[0]
     allocation_result = _allocation_what_if_result(
-        adjusted.iloc[0],
+        base_row,
         deposit_share,
         ofz_share,
         fund_share,
@@ -161,7 +203,7 @@ def _allocation_what_if_result(leader, deposit_share: int, ofz_share: int, fund_
         if share <= 0:
             continue
         what_if_rows.append({
-            "scenario": "What-if распределение",
+            "scenario": "Техническая чувствительность к условным долям",
             "instrument": instrument,
             "ticker": "WHATIF",
             "asset_class": asset_class,
