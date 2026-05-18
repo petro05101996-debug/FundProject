@@ -11,8 +11,11 @@ from investment_lab.ui.layout import go_to
 
 
 def render() -> None:
-    st.markdown("<div class='lab-page-header'><div><h2>Параметры пользовательского сценария</h2><div class='lab-page-kicker'>Выберите режим анализа и задайте параметры сценария</div></div><span class='lab-pill'>Рабочее пространство</span></div>", unsafe_allow_html=True)
-    disclaimer(SHORT_DISCLAIMER)
+    st.markdown(
+        "<div class='lab-page-header'><div><h2>Параметры пользовательского сценария</h2><div class='lab-page-kicker'>Выберите режим анализа и задайте параметры сценария</div></div>"
+        "<div class='lab-workspace-select'><small>Рабочее пространство</small>Основной проект ▾</div></div>",
+        unsafe_allow_html=True,
+    )
 
     st.markdown("### Режим анализа")
     cols = st.columns(4)
@@ -20,7 +23,9 @@ def render() -> None:
         with col:
             active = st.session_state["investment_lab_mode"] == mode["title"]
             outcome = mode.get("outcome", "получите понятный результат и риск-флаги")
-            card(("✓ " if active else "") + mode["title"], f"{mode['description']} Что получите: {outcome}", badge="Выбранный режим" if active else "Режим", strong=active)
+            icon = {"Проверить инструмент": "⌁", "Сравнить мои варианты": "⚖", "Проверить портфель": "▣", "Объяснить инструмент": "☰"}.get(mode["title"], "◇")
+            prefix = "✓ " if active else ""
+            card(f"{prefix}{icon} {mode['title']}", f"{mode['description']} Что получите: {outcome}", badge="Выбранный режим" if active else "Режим", strong=active)
             if st.button("Выбрать режим", key=f"profile_{mode['key']}", use_container_width=True, type="primary" if active else "secondary"):
                 st.session_state["investment_lab_mode"] = mode["title"]
 
@@ -54,14 +59,23 @@ def render() -> None:
     with right:
         next_hint = _next_step_hint(st.session_state["investment_lab_mode"])
         st.markdown(
-            f"<div class='lab-right-panel'><h3>Ваш профиль сценария</h3>"
+            "<div class='lab-sidebar-card'><h3>Краткие правила расчёта</h3>"
+            "<div class='lab-sidebar-list'>"
+            "<div><strong>◎ Ожидаемая доходность</strong>Среднегодовая доходность по каждому варианту с учётом горизонта и реинвестирования.</div>"
+            "<div><strong>☷ Риск и волатильность</strong>Вероятность потерь, волатильность доходности и максимальная просадка.</div>"
+            "<div><strong>◌ Ликвидность</strong>Возможность быстрого выхода из позиции и вероятность досрочного вывода.</div>"
+            "<div><strong>⚖ Комиссии и издержки</strong>Влияние всех комиссий на итоговую доходность.</div>"
+            "<div><strong>☆ Налоги</strong>Налоговые последствия и чистая доходность после учета налогов.</div>"
+            "<div><strong>☰ Стресс-сценарии</strong>Поведение каждого варианта при неблагоприятных условиях.</div>"
+            "</div></div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f"<div class='lab-sidebar-card'><h3>Ваш профиль сценария</h3>"
             f"<p><strong>Сумма:</strong> {profile.get('amount', 0):,.0f} {profile.get('currency', 'RUB')}</p>".replace(',', ' ')
             + f"<p><strong>Срок:</strong> {profile.get('horizon_bucket')}</p>"
             + f"<p><strong>Цель:</strong> {profile.get('goal')}</p>"
-            + f"<h3>Предварительные ограничения</h3><p>Ликвидность до 30 дней: {profile.get('min_liquidity_pct_30d', 80):.0f}%</p>"
-            + f"<p>Допустимая просадка: до {profile.get('acceptable_drawdown_pct', 5):.0f}%</p>"
-            + f"<p>Комиссии: {'учитываются' if profile.get('include_fees', True) else 'не учитываются'} · налоги: {'учитываются' if profile.get('include_taxes', True) else 'не учитываются'}</p>"
-            + f"<h3>Что будет проверено</h3><p>{next_hint}</p></div>",
+            + f"<p><strong>Что будет проверено:</strong> {next_hint}</p></div>",
             unsafe_allow_html=True,
         )
         privacy_notice(NO_ADVICE_NOTICE)

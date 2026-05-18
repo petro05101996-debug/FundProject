@@ -43,20 +43,19 @@ def render() -> None:
             unsafe_allow_html=True,
         )
     with right:
-        st.markdown("<div class='lab-preview-dashboard'><h3>Мини-dashboard сравнения</h3>", unsafe_allow_html=True)
+        st.markdown("<div class='lab-preview-dashboard'><h3>Сравнение сценариев</h3>", unsafe_allow_html=True)
         st.markdown(
-            "<div class='lab-instrument-row'><span>Сценарий А<small>лучше по ликвидности</small></span><span class='lab-risk-dot'>ликвидность</span></div>"
-            "<div class='lab-instrument-row'><span>Сценарий Б<small>выше риск просадки</small></span><span class='lab-risk-dot'>просадка</span></div>"
-            "<div class='lab-instrument-row'><span>Сценарий В<small>нарушает срок</small></span><span class='lab-risk-dot'>срок</span></div>",
+            "<div class='lab-instrument-row'><span>Ожидаемая стоимость портфеля<small>медианный сценарий</small></span><strong>12 540 000 ₽ <span style='color:#4ade80'>↑ 18,6%</span></strong></div>",
             unsafe_allow_html=True,
         )
         st.plotly_chart(scenario_projection_chart(summary, 5), use_container_width=True)
         st.markdown(
             "<div class='lab-metric-strip'>"
-            "<span class='lab-risk-chip Medium'>ликвидность</span>"
-            "<span class='lab-risk-chip High'>просадка</span>"
-            "<span class='lab-risk-chip Medium'>комиссии</span>"
-            "<span class='lab-risk-chip Low'>налоги</span>"
+            "<div class='lab-mini-kpi'><div class='label'>Риск (VaR 95%)</div><div class='value'>-18,3%</div><small>1 год</small></div>"
+            "<div class='lab-mini-kpi'><div class='label'>Макс. просадка</div><div class='value'>-24,7%</div><small>за период</small></div>"
+            "<div class='lab-mini-kpi'><div class='label'>Ликвидность</div><div class='value' style='color:#5eead4'>Высокая</div><small>оценка</small></div>"
+            "<div class='lab-mini-kpi'><div class='label'>Комиссии</div><div class='value'>0,72%</div><small>в год</small></div>"
+            "<div class='lab-mini-kpi'><div class='label'>Налоги (эфф.)</div><div class='value'>12,4%</div><small>в год</small></div>"
             "</div>",
             unsafe_allow_html=True,
         )
@@ -65,10 +64,10 @@ def render() -> None:
 
     st.markdown("### Возможности")
     features = [
-        ("⚖", "Сравнение сценариев", "Сравнение по доходности, риску, ликвидности, комиссиям и налогам."),
-        ("🛡", "Паспорт рисков", "Выявляет концентрацию, волатильность и ограничения по ликвидности."),
-        ("☔", "Стресс-тестирование", "Проверяет устойчивость к просадкам и неблагоприятным событиям."),
-        ("▤", "Прозрачный отчёт", "Фиксирует допущения, расчётные ограничения и чек-лист."),
+        ("⚖", "Сравнение сценариев", "Сравнивает пользовательские варианты по доходности, риску, просадкам, ликвидности, комиссиям и налогам."),
+        ("🛡", "Паспорт рисков и флаги рисков", "Выявляет ключевые риски по каждой позиции и по портфелю: концентрации, корреляции, валютные риски и другие."),
+        ("☔", "Стресс-тестирование", "Проверяет устойчивость портфеля в исторических и гипотетических стресс-сценариях."),
+        ("▤", "Прозрачный отчёт", "Готовит понятный отчёт с допущениями, расчётами и выводами, который удобно сохранить или показать."),
     ]
     cols = st.columns(4)
     for col, (icon, title, body) in zip(cols, features):
@@ -98,4 +97,12 @@ def render() -> None:
         bullet_card("Что сервис НЕ делает", WHAT_SERVICE_DOES_NOT_DO, positive=False)
     st.markdown("<div class='lab-action-bar'><span>Без брокерской интеграции</span><span>Без кнопки Купить</span><span>Без инвестиционных рекомендаций</span><span>Только пользовательские сценарии</span></div>", unsafe_allow_html=True)
     disclaimer(PRIMARY_DISCLAIMER)
+    st.markdown(
+        "<div class='lab-footer-strip'>"
+        "<span>ⓘ Сервис предоставляет информационно-аналитические материалы. Мы не даём указаний по покупке, продаже или удержанию финансовых инструментов.</span>"
+        "<span>🛡 Ваши данные защищены и не передаются третьим лицам.</span>"
+        "<span>© 2024 Investment Scenario Lab<br>Все права защищены</span>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
     privacy_notice(FOOTER_DISCLAIMER)

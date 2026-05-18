@@ -41,20 +41,21 @@ def render() -> None:
         f"концентрация {leader['max_position_pct']:.1f}%"
     )
     st.markdown(
-        f"<div class='lab-panel lab-card-strong'><h3>Сценарий «{escape(str(leader['scenario']))}» имеет наибольшее соответствие введённым ограничениям среди пользовательских сценариев: {escape(reasons)}.</h3><p>{escape(REPORT_DISCLAIMER)}</p></div>",
+        f"<div class='lab-status-ok'>✓ Сценарий «<strong>{escape(str(leader['scenario']))}</strong>» имеет наибольшее соответствие введённым ограничениям среди пользовательских сценариев: {escape(reasons)}.<br><small>{escape(REPORT_DISCLAIMER)}</small></div>",
         unsafe_allow_html=True,
     )
 
-    c1, c2, c3, c4 = st.columns(4)
-    with c1: kpi_card("Диапазон результата", f"{leader['stress_value']:,.0f}–{leader['projected_value']:,.0f} ₽".replace(",", " "), "Плохой и базовый сценарии")
-    with c2: kpi_card("Стресс-просадка", f"{leader['worst_stress_impact_pct']:.1f}%", "Максимальная стресс-проверка")
-    with c3: kpi_card("Ликвидность", str(leader["liquidity_label"]), f"до 30 дней: {leader['liquid_within_30d_pct']:.1f}%")
-    with c4: kpi_card("Риск концентрации", f"{leader['max_position_pct']:.1f}%", "Максимальная позиция")
-    c5, c6, c7, c8 = st.columns(4)
-    with c5: kpi_card("Сложность", str(leader["complexity_label"]), "Средняя оценка")
-    with c6: kpi_card("Комиссии", f"{leader['fee_and_commission_drag_pct']:.2f}%", "Годовая нагрузка")
-    with c7: kpi_card("Налоги", f"{leader['tax_drag_pct']:.2f}%", "По пользовательской ставке")
-    with c8: kpi_card("Денежный поток", f"{leader_cashflows['income'].sum():,.0f} ₽".replace(",", " "), "Расчётный доход сценария с максимальным соответствием за горизонт")
+    st.markdown(
+        "<div class='lab-kpi-row-6'>"
+        f"<div class='lab-card lab-kpi-card'><div class='lab-kpi-label'>Базовый результат</div><div class='lab-kpi-value'>{leader['projected_value']:,.0f} ₽</div><p>медианный результат за {assumptions.horizon_years} лет</p></div>".replace(',', ' ')
+        + f"<div class='lab-card lab-kpi-card'><div class='lab-kpi-label'>Стресс-результат</div><div class='lab-kpi-value'>{leader['stress_value']:,.0f} ₽</div><p>медианный результат за {assumptions.horizon_years} лет</p></div>".replace(',', ' ')
+        + f"<div class='lab-card lab-kpi-card'><div class='lab-kpi-label'>Стресс-просадка</div><div class='lab-kpi-value'>{leader['worst_stress_impact_pct']:.1f}%</div><p>макс. просадка за {assumptions.horizon_years} лет</p></div>"
+        + f"<div class='lab-card lab-kpi-card'><div class='lab-kpi-label'>Ликвидность</div><div class='lab-kpi-value'>{escape(str(leader['liquidity_label']))}</div><p>средняя оценка</p></div>"
+        + f"<div class='lab-card lab-kpi-card'><div class='lab-kpi-label'>Риск</div><div class='lab-kpi-value'>{escape(str(leader['risk_label']))}</div><p>средняя оценка</p></div>"
+        + f"<div class='lab-card lab-kpi-card'><div class='lab-kpi-label'>Сложность</div><div class='lab-kpi-value'>{escape(str(leader['complexity_label']))}</div><p>средняя оценка</p></div>"
+        + "</div>",
+        unsafe_allow_html=True,
+    )
 
     main, side = st.columns([1.55, .75])
     with main:

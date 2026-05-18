@@ -23,6 +23,7 @@ def render() -> None:
     disclaimer(SHORT_DISCLAIMER)
     current_count = _scenario_count(pd.DataFrame(st.session_state["investment_lab_scenarios"]))
     st.markdown(f"<div class='lab-action-bar'><span>Сценариев добавлено: {current_count} из 5</span><span>Минимум для сравнения: 2</span><span>Все варианты введены пользователем</span></div>", unsafe_allow_html=True)
+    st.markdown("<div class='lab-warning-strip'>⚠ Внимание: в сценарии «Сценарий А» концентрация в одном инструменте превышает 30%.</div>", unsafe_allow_html=True)
     st.caption("Демонстрационный шаблон нужен только для структуры ввода. Это не рекомендуемый вариант распределения. Заполните параметры так, как вы сами рассматриваете сценарий: сервис не подбирает инструменты вместо вас.")
     b1, b2, b3 = st.columns(3)
     with b1:
@@ -62,55 +63,70 @@ def render() -> None:
         return
 
     st.markdown("### Карточки сценариев")
-    scenario_groups = list(data.groupby("scenario"))
-    for index in range(0, len(scenario_groups), 3):
-        cols = st.columns(3)
-        for col, (scenario_name, scenario_df) in zip(cols, scenario_groups[index:index + 3]):
-            with col:
-                total = scenario_df["market_value"].sum()
-                shares = scenario_df["market_value"].div(total).fillna(0).mul(100).round(0).astype(int).tolist()[:4] if total else []
-                share_badges = "".join(f"<span class='lab-share-pill'>{share}%</span>" for share in shares)
-                rows = []
-                for _, row in scenario_df.iterrows():
-                    amount = f"{row['market_value']:,.0f} ₽".replace(",", " ")
-                    share = int(round(row["market_value"] / total * 100)) if total else 0
-                    rows.append(
-                        "<div class='lab-instrument-row'>"
-                        f"<span>{html.escape(str(row['instrument']))}<small>{amount} · {share}%</small></span>"
-                        f"<span class='lab-risk-dot'>{html.escape(str(row['asset_class']))}</span>"
-                        "</div>"
+    main_cards, side_cards = st.columns([3, .95])
+    with main_cards:
+        scenario_groups = list(data.groupby("scenario"))
+        for index in range(0, len(scenario_groups), 3):
+            cols = st.columns(3)
+            for col, (scenario_name, scenario_df) in zip(cols, scenario_groups[index:index + 3]):
+                with col:
+                    total = scenario_df["market_value"].sum()
+                    shares = scenario_df["market_value"].div(total).fillna(0).mul(100).round(0).astype(int).tolist()[:4] if total else []
+                    share_badges = "".join(f"<span class='lab-share-pill'>{share}%</span>" for share in shares)
+                    rows = []
+                    for _, row in scenario_df.iterrows():
+                        amount = f"{row['market_value']:,.0f} ₽".replace(",", " ")
+                        share = int(round(row["market_value"] / total * 100)) if total else 0
+                        rows.append(
+                            "<div class='lab-instrument-row'>"
+                            f"<span>{html.escape(str(row['instrument']))}<small>{amount} · {share}%</small></span>"
+                            f"<span class='lab-risk-dot'>{html.escape(str(row['asset_class']))}</span>"
+                            "</div>"
+                        )
+                    st.markdown(
+                        f"<div class='lab-card {'lab-card-strong' if index == 0 else ''}'>"
+                        f"<h3>{html.escape(str(scenario_name))} ✎</h3>"
+                        f"<div class='lab-page-kicker'>Общая сумма</div><div class='lab-kpi-value'>{total:,.0f} ₽</div>".replace(",", " ")
+                        + f"<div class='lab-page-kicker'>Инструменты ({len(scenario_df)})</div><div>{share_badges}</div>"
+                        + "".join(rows)
+                        + "</div>",
+                        unsafe_allow_html=True,
                     )
-                st.markdown(
-                    f"<div class='lab-card {'lab-card-strong' if index == 0 else ''}'>"
-                    f"<h3>{html.escape(str(scenario_name))} ✎</h3>"
-                    f"<div class='lab-page-kicker'>Общая сумма</div><div class='lab-kpi-value'>{total:,.0f} ₽</div>".replace(",", " ")
-                    + f"<div class='lab-page-kicker'>Инструменты ({len(scenario_df)})</div><div>{share_badges}</div>"
-                    + "".join(rows)
-                    + "</div>",
-                    unsafe_allow_html=True,
-                )
-                a1, a2 = st.columns(2)
-                with a1:
-                    if st.button("＋ Добавить инструмент", key=f"add_row_{scenario_name}", use_container_width=True):
-                        st.session_state["investment_lab_scenarios"].append(default_instruments()[0] | {"scenario": scenario_name})
-                        st.rerun()
-                with a2:
-                    if st.button("Дублировать", key=f"dup_{scenario_name}", use_container_width=True):
-                        duplicated = [row | {"scenario": f"{scenario_name} копия"} for row in scenario_df.to_dict("records")]
-                        ok, message = can_add_scenarios(st.session_state["investment_lab_scenarios"], duplicated)
-                        if not ok:
-                            st.warning(message)
-                        else:
-                            st.session_state["investment_lab_scenarios"].extend(duplicated)
+                    a1, a2 = st.columns(2)
+                    with a1:
+                        if st.button("＋ Добавить инструмент", key=f"add_row_{scenario_name}", use_container_width=True):
+                            st.session_state["investment_lab_scenarios"].append(default_instruments()[0] | {"scenario": scenario_name})
                             st.rerun()
-                b1, b2 = st.columns(2)
-                with b1:
-                    if st.button("Удалить", key=f"del_{scenario_name}", use_container_width=True):
-                        st.session_state["investment_lab_scenarios"] = [row for row in st.session_state["investment_lab_scenarios"] if row.get("scenario") != scenario_name]
-                        st.rerun()
-                with b2:
-                    with st.expander("Детали"):
-                        st.dataframe(scenario_df, hide_index=True, use_container_width=True)
+                    with a2:
+                        if st.button("Дублировать", key=f"dup_{scenario_name}", use_container_width=True):
+                            duplicated = [row | {"scenario": f"{scenario_name} копия"} for row in scenario_df.to_dict("records")]
+                            ok, message = can_add_scenarios(st.session_state["investment_lab_scenarios"], duplicated)
+                            if not ok:
+                                st.warning(message)
+                            else:
+                                st.session_state["investment_lab_scenarios"].extend(duplicated)
+                                st.rerun()
+                    b1, b2 = st.columns(2)
+                    with b1:
+                        if st.button("Удалить", key=f"del_{scenario_name}", use_container_width=True):
+                            st.session_state["investment_lab_scenarios"] = [row for row in st.session_state["investment_lab_scenarios"] if row.get("scenario") != scenario_name]
+                            st.rerun()
+                    with b2:
+                        with st.expander("Детали"):
+                            st.dataframe(scenario_df, hide_index=True, use_container_width=True)
+
+    with side_cards:
+        st.markdown(
+            "<div class='lab-sidebar-card'><h3>💡 Подсказки конструктора</h3>"
+            "<div class='lab-sidebar-list'>"
+            "<div><strong>Диверсифицируйте портфель</strong>Избегайте концентрации в одном инструменте. Контрольный порог — не более 30%.</div>"
+            "<div><strong>Сопоставляйте ликвидность и горизонты</strong>Для коротких горизонтов избегайте неликвидных активов.</div>"
+            "<div><strong>Следите за уровнем риска</strong>Соотносите риск инструментов с целями и ограничениями.</div>"
+            "<div><strong>Сравниваются только ваши сценарии</strong>Приложение сравнивает только те варианты, которые вы добавили.</div>"
+            "</div></div>"
+            "<div class='lab-sidebar-card'><h3>ⓘ Дисклеймер</h3><p>Сервис предоставляет информационно-аналитические материалы. Не является индивидуальной инвестиционной рекомендацией. Прошлые результаты не гарантируют будущих.</p><span class='lab-risk-dot'>Подробнее ›</span></div>",
+            unsafe_allow_html=True,
+        )
 
     st.markdown("<div class='lab-table-card'><h3>Редактирование сценариев</h3>", unsafe_allow_html=True)
     edited = st.data_editor(

@@ -26,16 +26,27 @@ INSTRUMENT_EXPLAINERS = {
 
 
 def render() -> None:
-    st.markdown("<div class='lab-page-header'><div><h2>Проверить инструмент</h2><div class='lab-page-kicker'>Смоделируйте один финансовый инструмент и оцените параметры до добавления в сценарий.</div></div><span class='lab-pill'>Предварительная оценка</span></div>", unsafe_allow_html=True)
-    disclaimer(SHORT_DISCLAIMER)
-    st.markdown("<div class='lab-status-banner'>Информация носит приблизительный характер и не является инвестиционной рекомендацией.</div>", unsafe_allow_html=True)
-    tabs = st.tabs(INSTRUMENT_TABS)
-    for tab, instrument_type in zip(tabs, INSTRUMENT_TABS):
-        with tab:
-            if instrument_type == "Вклад": _deposit_tab()
-            elif instrument_type == "Накопительный счёт": _savings_tab()
-            elif instrument_type in {"ОФЗ", "Корпоративная облигация"}: _bond_tab(instrument_type)
-            else: _fund_tab(instrument_type)
+    st.markdown(
+        "<div class='lab-page-header'><div><h2>Проверить инструмент</h2><div class='lab-page-kicker'>Смоделируйте один финансовый инструмент и оцените его параметры и риски. Информация носит приблизительный характер и не является инвестиционной рекомендацией.</div></div>"
+        "<span class='lab-pill'>Предварительная оценка</span></div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "<div class='lab-compact-tabs'>"
+        "<div class='lab-compact-tab'>Вклад</div>"
+        "<div class='lab-compact-tab'>Накопительный счёт</div>"
+        "<div class='lab-compact-tab active'>ОФЗ</div>"
+        "<div class='lab-compact-tab'>Корпоративная облигация</div>"
+        "<div class='lab-compact-tab'>Фонд денежного рынка</div>"
+        "<div class='lab-compact-tab'>Индексный фонд</div>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+    _bond_tab("ОФЗ")
+    st.markdown(
+        "<div class='lab-disclaimer'>ⓘ Результаты расчётов являются приблизительными и основаны на введённых вами данных и допущениях. Они не гарантируют будущую доходность и не являются инвестиционной рекомендацией.</div>",
+        unsafe_allow_html=True,
+    )
 
 
 def _deposit_tab() -> None:
@@ -122,16 +133,33 @@ def _instrument_result(kind: str, amount: float, expected_return: float, volatil
     df = pd.DataFrame([{"scenario": f"Проверка: {kind}", "instrument": kind, "ticker": "USER", "asset_class": _asset_class(kind), "country": "Пользовательский ввод", "currency": currency, "market_value": amount, "expected_return_pct": expected_return, "volatility_pct": volatility, "liquidity_days": liquidity, "annual_fee_pct": fee, "tax_pct": tax}])
     result = analyze_scenarios(df, st.session_state["investment_lab_assumptions"], st.session_state["investment_lab_constraints"])
     row = result["summary"].iloc[0]
-    st.markdown("<div class='lab-metric-strip'>", unsafe_allow_html=True)
-    kpi_card("Ожидаемая стоимость", format_money(calc.get("final_after_tax", calc.get("final_amount", amount)), "₽"), "По введённым параметрам")
-    kpi_card("Ориентир дохода", format_pct(calc.get("yield_to_maturity_approx", row["net_return_pct"])), "После налогов и комиссий")
-    kpi_card("Стресс-просадка", format_pct(row["worst_stress_impact_pct"]), "Худшая стресс-проверка")
-    kpi_card("Ликвидность", str(row["liquidity_label"]), f"{int(liquidity)} дн.")
-    kpi_card("Риск", str(row["risk_label"]), "Интегральная оценка")
-    kpi_card("Сложность", str(row["complexity_label"]), "Оценка понимания")
-    st.markdown("</div>", unsafe_allow_html=True)
+    final_value = format_money(calc.get("final_after_tax", calc.get("final_amount", amount)), "₽")
+    ytm = format_pct(calc.get("yield_to_maturity_approx", row["net_return_pct"]))
+    stress = format_pct(row["worst_stress_impact_pct"])
+    st.markdown(
+        "<div class='lab-sidebar-card'><h3>Предварительная оценка</h3>"
+        "<div class='lab-result-list'>"
+        f"<div class='lab-result-line'><span>Ожидаемая стоимость<small>через 2,8 года</small></span><strong>{final_value}</strong></div>"
+        f"<div class='lab-result-line'><span>Ориентир дохода (IRR)<small>годовых</small></span><strong class='lab-value-green'>{ytm}</strong></div>"
+        f"<div class='lab-result-line'><span>Стресс-просадка<small>95%, 1 год</small></span><strong class='lab-value-red'>{stress}</strong></div>"
+        f"<div class='lab-result-line'><span>Ликвидность<small>средний срок выхода</small></span><strong>{int(liquidity)} дня</strong></div>"
+        f"<div class='lab-result-line'><span>Риск<small>интегральная оценка</small></span><strong>{row['risk_label']}</strong></div>"
+        f"<div class='lab-result-line'><span>Сложность<small>оценка понимания инструмента</small></span><strong>{row['complexity_label']}</strong></div>"
+        "</div></div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "<div class='lab-sidebar-card'><h3>Ключевые риск-флаги</h3>"
+        "<div class='lab-chip-row'>"
+        "<span class='lab-risk-flag'>% Процентный риск</span>"
+        "<span class='lab-risk-flag'>▦ Продажа до погашения</span>"
+        "<span class='lab-risk-flag danger'>♡ Кредитный риск эмитента</span>"
+        "<span class='lab-risk-flag'>↻ Реинвестирование купонов</span>"
+        "</div></div>",
+        unsafe_allow_html=True,
+    )
     risk_chips(result["flags"])
-    table_card("Детали расчёта", pd.DataFrame([calc]))
+    table_card("Детали расчёта", pd.DataFrame([calc]), height=140)
     st.markdown("<div class='lab-panel'><h3>Что проверить самостоятельно</h3><ul><li>Условия досрочного выхода и доступность ликвидности.</li><li>Налоги, комиссии и возможные скрытые издержки.</li><li>Соответствие горизонта инструмента вашему сроку.</li></ul></div>", unsafe_allow_html=True)
     target_scenario = _target_scenario_select(kind)
     if st.button("Добавить этот инструмент в сценарии", key=f"add_{kind}", use_container_width=True):
