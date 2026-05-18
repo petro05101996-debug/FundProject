@@ -1,0 +1,17 @@
+:root{
+  --bg:#07111f;
+  --bg2:#0b1220;
+  --surface:#101a2b;
+  --surface-soft:#162235;
+  --surface-elev:#1b2a40;
+  --border:rgba(148,163,184,.18);
+  --primary:#22d3ee;
+  --primary-soft:rgba(34,211,238,.12);
+  --success:#22c55e;
+  --warning:#f59e0b;
+  --danger:#ef4444;
+  --text:#e5edf7;
+  --muted:#94a3b8;
+  --soft:#64748b;
+  --radius:24px;
+}
