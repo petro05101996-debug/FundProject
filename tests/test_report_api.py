@@ -1,0 +1,10 @@
+from fastapi.testclient import TestClient
+from backend.app.main import app
+
+
+def test_report_html_from_real_scenario_result():
+    c=TestClient(app)
+    payload={'assumptions':{},'constraints':{},'positions':[{'scenario':'S1','instrument':'Вклад','ticker':'D','asset_class':'Денежные средства','country':'RU','currency':'RUB','market_value':100000,'expected_return_pct':8,'volatility_pct':1,'liquidity_days':1,'annual_fee_pct':0,'tax_pct':13}]}
+    scenario=c.post('/api/scenario/analyze',json=payload).json()
+    j=c.post('/api/report/build',json={'result':scenario}).json()
+    assert 'html' in j and '<html' in j['html'].lower()

@@ -1,0 +1,2 @@
+import React from 'react';
+export default function ScenarioTable({rows}:{rows:any[]}){return <table className='table'><thead><tr><th>Сценарий</th><th>Ожидаемый результат</th><th>Стресс</th><th>Ликвидность</th><th>Риск</th></tr></thead><tbody>{rows.map((r,i)=><tr key={i}><td>{r.scenario}</td><td>{Number(r.projected_value||0).toFixed(0)}</td><td>{Number(r.worst_stress_impact_pct||0).toFixed(1)}%</td><td>{r.liquidity_label||'—'}</td><td>{r.risk_label||'—'}</td></tr>)}</tbody></table>}
