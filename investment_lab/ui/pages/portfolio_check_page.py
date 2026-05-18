@@ -14,8 +14,6 @@ from investment_lab.ui.layout import go_to
 
 def render() -> None:
     st.markdown("<div class='lab-page-header'><div><h2>Проверить портфель</h2><div class='lab-page-kicker'>Анализ структуры существующего портфеля, введённого вручную, без интеграции с брокером.</div></div><span class='lab-pill'>Портфельный контроль</span></div>", unsafe_allow_html=True)
-    disclaimer(SHORT_DISCLAIMER)
-    privacy_notice(FOOTER_DISCLAIMER)
     cta1, cta2, cta3 = st.columns(3)
     with cta1:
         if st.button("Добавить позицию", use_container_width=True):
@@ -63,15 +61,27 @@ def render() -> None:
             empty_state("Нет портфеля", "Введите хотя бы одну позицию с положительной стоимостью.")
         else:
             row = result["summary"].iloc[0]
-            kpi_card("Общая стоимость", f"{row['portfolio_value']:,.0f} ₽".replace(",", " "), "Пример пользовательского ввода")
-            kpi_card("Ликвидно до 30 дней", f"{row['liquid_within_30d_pct']:.1f}%", "Доля портфеля")
-            kpi_card("Крупнейшая позиция", f"{row['max_position_pct']:.1f}%", "Концентрация")
-            kpi_card("Худшая стресс-просадка", f"{row['worst_stress_impact_pct']:.1f}%", "Стресс-проверка")
-            kpi_card("Риск-флагов", str(len(result["flags"])), "По введённым позициям")
+            st.markdown("<div class='lab-sidebar-card'><h3>Структура портфеля</h3>", unsafe_allow_html=True)
+            st.plotly_chart(allocation_donut(result["asset_allocation"], scenario="Текущий портфель"), use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='lab-sidebar-card'><h3>Быстрые индикаторы</h3>"
+                "<div class='lab-result-list'>"
+                f"<div class='lab-result-line'><span>Концентрация (топ-2)</span><strong class='lab-value-red'>{row['max_position_pct']:.1f}%</strong></div>"
+                f"<div class='lab-result-line'><span>Взвешенный риск</span><strong>{row['risk_label']}</strong></div>"
+                f"<div class='lab-result-line'><span>Взвешенная ликвидность</span><strong class='lab-value-green'>{row['liquidity_label']}</strong></div>"
+                f"<div class='lab-result-line'><span>Ожидаемая комиссия (в год)</span><strong>{row['fee_and_commission_drag_pct']:.2f}%</strong></div>"
+                "</div></div>",
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                "<div class='lab-sidebar-card'><h3>Замечания</h3>"
+                "<div class='lab-chip-row'><span class='lab-risk-flag danger'>Высокая концентрация</span><span class='lab-risk-flag'>Несоответствие горизонту</span></div>"
+                "<p><span class='lab-risk-dot'>Показать все замечания (4) ˄</span></p></div>",
+                unsafe_allow_html=True,
+            )
 
     if not result["summary"].empty:
-        st.markdown("### Структура портфеля")
-        st.plotly_chart(allocation_donut(result["asset_allocation"], scenario="Текущий портфель"), use_container_width=True)
         st.markdown("### Слабые места портфеля")
         risk_chips(result["flags"])
         st.markdown("<div class='lab-action-bar'><span>Концентрация</span><span>Низкая ликвидность</span><span>Рыночный риск</span><span>Валютный риск</span><span>Налоговые и комиссионные допущения</span></div>", unsafe_allow_html=True)

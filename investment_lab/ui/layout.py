@@ -30,17 +30,17 @@ def init_session_state() -> None:
         "investment_lab_page": "Лендинг",
         "investment_lab_mode": "Сравнить мои варианты",
         "investment_lab_profile": {
-            "amount": 500000.0,
+            "amount": 10000000.0,
             "currency": "RUB",
-            "horizon_months": 12,
-            "horizon_bucket": "6–12 месяцев",
-            "goal": "Сохранить деньги",
+            "horizon_months": 60,
+            "horizon_bucket": "3–5 лет",
+            "goal": "Сравнить варианты",
             "liquidity_need": "Возможно через 3–6 месяцев",
             "may_need_money_early": True,
             "min_liquidity_pct_30d": 80.0,
-            "drawdown_choice": "До 5%",
-            "acceptable_drawdown_pct": 5.0,
-            "experience": "Не разбираюсь",
+            "drawdown_choice": "Больше 10%",
+            "acceptable_drawdown_pct": 20.0,
+            "experience": "Уже покупал вклады/облигации/фонды",
             "include_fees": True,
             "include_taxes": True,
             "tax_pct": 13.0,
@@ -60,7 +60,7 @@ def apply_shell() -> None:
     st.markdown(APP_CSS, unsafe_allow_html=True)
     st.markdown(
         "<div class='lab-topbar'>"
-        "<div class='lab-brand'><div class='lab-brand-mark'>▱</div><div class='lab-brand-text'>"
+        "<div class='lab-brand'><div class='lab-brand-mark'>◈</div><div class='lab-brand-text'>"
         "<div class='lab-brand-title'>Investment Scenario Lab</div>"
         "<div class='lab-brand-subtitle'>Финансовый сценарный анализатор</div></div></div>"
         "<div class='lab-topnav'><span>Возможности</span><span>Как это работает</span><span>Тарифы</span><span>Примеры</span><span>База знаний</span><span>О проекте</span></div>"
@@ -72,7 +72,7 @@ def apply_shell() -> None:
 
 def sidebar_navigation() -> str:
     with st.sidebar:
-        st.markdown("### ◈ Investment Scenario Lab")
+        st.markdown("### Investment Scenario Lab")
         st.caption("Финансовый сценарный анализатор")
         page = st.session_state["investment_lab_page"]
         for group, items in NAV_GROUPS.items():
@@ -83,7 +83,7 @@ def sidebar_navigation() -> str:
                     continue
                 active = item == page
                 css = "lab-nav-item lab-nav-item-active" if active else "lab-nav-item"
-                icon = {'Лендинг': '⌂', 'Параметры сценария': '◫', 'Проверить инструмент': '⌁', 'Сравнить мои варианты': '⚖', 'Проверить портфель': '▣', 'Итог по сценариям': '☷', 'Аналитический отчёт': '▤', 'Объяснить инструмент': 'ⓘ'}.get(item, "○")
+                icon = {'Лендинг': '⌂', 'Параметры сценария': '◫', 'Проверить инструмент': '⌁', 'Сравнить мои варианты': '⚖', 'Проверить портфель': '▣', 'Итог по сценариям': '☷', 'Аналитический отчёт': '▤', 'Объяснить инструмент': '☰'}.get(item, "○")
                 label = f"{icon} {item}"
                 if st.button(label, key=f"nav_{item}", use_container_width=True, type="primary" if active else "secondary"):
                     st.session_state["investment_lab_page"] = item

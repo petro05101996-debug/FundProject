@@ -30,8 +30,14 @@ PAGE_RENDERERS = {
 def render_investment_lab_app() -> None:
     init_session_state()
     apply_shell()
-    page = sidebar_navigation()
+    current_page = st.session_state["investment_lab_page"]
+    if current_page == "Лендинг":
+        st.markdown("<style>[data-testid='stSidebar']{display:none !important;} .block-container{padding-left:1.8rem !important; padding-right:1.8rem !important;}</style>", unsafe_allow_html=True)
+        page = current_page
+    else:
+        page = sidebar_navigation()
+    shell_class = "lab-shell lab-shell-landing" if page == "Лендинг" else "lab-shell"
     with st.container():
-        st.markdown("<div class='lab-shell'>", unsafe_allow_html=True)
+        st.markdown(f"<div class='{shell_class}'>", unsafe_allow_html=True)
         PAGE_RENDERERS.get(page, landing_page.render)()
         st.markdown("</div>", unsafe_allow_html=True)
