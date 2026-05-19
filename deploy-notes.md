@@ -1,16 +1,26 @@
-# Timeweb App Platform deployment notes
+# Production deployment notes
 
-Use these settings for deploying the Streamlit app to Timeweb App Platform:
+FundProject production deployment does not use Streamlit runtime components.
+
+## Runtime
+
+Production runtime stack:
+
+- nginx (serves React/Vite static frontend and reverse-proxies backend API)
+- FastAPI backend (uvicorn)
+- React/Vite frontend build artifacts
+
+## Network settings
 
 - Protocol: HTTP
-- Port: 8501
-- Healthcheck path: `/_stcore/health`
-- Initial delay / start period: 120 seconds
-- Timeout: 10 seconds
-- Retries: 10-12
+- Port: 8080
+- Healthcheck path: `/health`
 
-The Dockerfile intentionally does not include a Docker `HEALTHCHECK` directive for the first deployment attempt. If Timeweb still fails health checks and the platform UI cannot be configured to use `/_stcore/health`, add a Dockerfile health check in a separate commit:
+## Process model
 
-```dockerfile
-HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 CMD curl -f http://localhost:8501/_stcore/health || exit 1
-```
+Container entrypoint is supervisor, which runs only:
+
+1. `uvicorn app.main:app` on `127.0.0.1:8000`
+2. `nginx` on external port `8080`
+
+No Streamlit process is started in production.
