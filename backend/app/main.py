@@ -9,9 +9,9 @@ from app.api.explain import router as explain_router
 app = FastAPI(title='Investment Scenario Lab API', version='1.0.0')
 app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_credentials=True, allow_methods=['*'], allow_headers=['*'])
 
-@app.get('/health')
+@app.get("/health")
 def health():
-    return {'status': 'ok'}
+    return {"status": "ok"}
 
 app.include_router(scenario_router, prefix='/api/scenario', tags=['scenario'])
 app.include_router(instrument_router, prefix='/api/instrument', tags=['instrument'])
