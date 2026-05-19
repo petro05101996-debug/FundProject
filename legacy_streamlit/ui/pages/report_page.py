@@ -8,8 +8,8 @@ import streamlit as st
 from investment_lab.data.legal_texts import REPORT_DISCLAIMER
 from investment_lab.engine.report_builder import build_cashflow_table, build_report_bundle, export_html_report, user_cashflow_table, user_summary_table
 from investment_lab.engine.scenario_comparator import analyze_scenarios
-from investment_lab.ui.charts import cashflow_donut, stress_bar
-from investment_lab.ui.components import empty_state, table_card
+from legacy_streamlit.ui.charts import cashflow_donut, stress_bar
+from legacy_streamlit.ui.components import empty_state, table_card
 
 
 def render() -> None:

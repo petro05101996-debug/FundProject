@@ -9,9 +9,9 @@ from investment_lab.data.legal_texts import REPORT_CHECKLIST, REPORT_DISCLAIMER,
 from investment_lab.domain.models import ScenarioAssumptions
 from investment_lab.engine.report_builder import build_cashflow_table
 from investment_lab.engine.scenario_comparator import analyze_scenarios
-from investment_lab.ui.charts import cashflow_donut, drawdown_chart, portfolio_allocation_donut, scenario_projection_chart, stress_bar
-from investment_lab.ui.components import disclaimer, empty_state, kpi_card, risk_chips, table_card
-from investment_lab.ui.layout import go_to
+from legacy_streamlit.ui.charts import cashflow_donut, drawdown_chart, portfolio_allocation_donut, scenario_projection_chart, stress_bar
+from legacy_streamlit.ui.components import disclaimer, empty_state, kpi_card, risk_chips, table_card
+from legacy_streamlit.ui.layout import go_to
 
 
 def render() -> None:

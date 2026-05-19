@@ -6,7 +6,7 @@ import streamlit as st
 from investment_lab.data.knowledge_base import INSTRUMENT_GUIDE
 from investment_lab.data.legal_texts import EDUCATIONAL_DISCLAIMER
 from investment_lab.engine.explanation_builder import build_instrument_explanation
-from investment_lab.ui.components import card, disclaimer, kpi_card, table_card
+from legacy_streamlit.ui.components import card, disclaimer, kpi_card, table_card
 
 
 def render() -> None:

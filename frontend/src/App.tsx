@@ -22,7 +22,7 @@ export default function App(){
   const content = useMemo(()=>({
     landing:<LandingPage onStart={()=>setPage('profile')} onExplain={()=>setPage('explain')} />,
     profile:<ScenarioProfilePage profile={profile} setProfile={setProfile} onNavigate={setPage} />,
-    instrument:<InstrumentCheckPage profile={profile} />,
+    instrument:<InstrumentCheckPage />,
     builder:<ScenarioBuilderPage profile={profile} onDone={(r:any)=>{setAnalysisResult(r);setPage('results')}} />,
     portfolio:<PortfolioCheckPage profile={profile} />,
     results:<ResultsPage profile={profile} result={analysisResult} onReport={()=>setPage('report')} onNavigate={setPage} />,

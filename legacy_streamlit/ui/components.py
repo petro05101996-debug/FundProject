@@ -6,7 +6,7 @@ from typing import Iterable
 
 import streamlit as st
 
-from investment_lab.ui.formatters import readable_table
+from legacy_streamlit.ui.formatters import readable_table
 
 
 def card(title: str, body: str, *, badge: str | None = None, strong: bool = False) -> None:

@@ -10,9 +10,9 @@ from investment_lab.data.legal_texts import FOOTER_DISCLAIMER, SESSION_DATA_NOTI
 from investment_lab.data.scenario_templates import SCENARIO_TEMPLATES
 from investment_lab.domain.models import SUPPORTED_ASSET_CLASSES, default_instruments, required_instrument_columns
 from investment_lab.engine.scenario_comparator import analyze_scenarios
-from investment_lab.ui.charts import scenario_score_bar, stress_bar
-from investment_lab.ui.components import card, disclaimer, empty_state, kpi_card, privacy_notice, table_card
-from investment_lab.ui.layout import go_to
+from legacy_streamlit.ui.charts import scenario_score_bar, stress_bar
+from legacy_streamlit.ui.components import card, disclaimer, empty_state, kpi_card, privacy_notice, table_card
+from legacy_streamlit.ui.layout import go_to
 
 
 MAX_SCENARIOS = 5

@@ -6,10 +6,10 @@ import streamlit as st
 from investment_lab.domain.models import SUPPORTED_ASSET_CLASSES, default_instruments, default_portfolio, required_instrument_columns
 from investment_lab.engine.report_builder import build_cashflow_table, user_cashflow_table
 from investment_lab.engine.scenario_comparator import analyze_scenarios
-from investment_lab.ui.charts import allocation_donut
-from investment_lab.ui.components import disclaimer, empty_state, kpi_card, privacy_notice, risk_chips, table_card
+from legacy_streamlit.ui.charts import allocation_donut
+from legacy_streamlit.ui.components import disclaimer, empty_state, kpi_card, privacy_notice, risk_chips, table_card
 from investment_lab.data.legal_texts import FOOTER_DISCLAIMER, SHORT_DISCLAIMER
-from investment_lab.ui.layout import go_to
+from legacy_streamlit.ui.layout import go_to
 
 
 def render() -> None:

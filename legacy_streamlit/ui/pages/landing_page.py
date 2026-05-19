@@ -5,9 +5,9 @@ import streamlit as st
 
 from investment_lab.data.mockup_metrics import MOCKUP_LANDING_KPIS, MOCKUP_RESULTS
 from investment_lab.data.legal_texts import FOOTER_DISCLAIMER, PRIMARY_DISCLAIMER, WHAT_SERVICE_DOES, WHAT_SERVICE_DOES_NOT_DO
-from investment_lab.ui.charts import scenario_projection_chart
-from investment_lab.ui.components import bullet_card, card, disclaimer, privacy_notice
-from investment_lab.ui.layout import go_to
+from legacy_streamlit.ui.charts import scenario_projection_chart
+from legacy_streamlit.ui.components import bullet_card, card, disclaimer, privacy_notice
+from legacy_streamlit.ui.layout import go_to
 
 
 def render() -> None:

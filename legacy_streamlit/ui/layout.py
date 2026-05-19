@@ -5,7 +5,7 @@ import streamlit as st
 
 from investment_lab.data.legal_texts import FOOTER_DISCLAIMER, PRIMARY_DISCLAIMER
 from investment_lab.domain.models import ScenarioAssumptions, UserConstraints, default_instruments, default_portfolio
-from investment_lab.ui.styles import APP_CSS
+from legacy_streamlit.ui.styles import APP_CSS
 
 PAGES = [
     "Лендинг",

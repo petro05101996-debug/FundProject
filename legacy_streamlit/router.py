@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import streamlit as st
 
-from investment_lab.ui.layout import apply_shell, init_session_state, sidebar_navigation
-from investment_lab.ui.pages import (
+from legacy_streamlit.ui.layout import apply_shell, init_session_state, sidebar_navigation
+from legacy_streamlit.ui.pages import (
     explain_instrument_page,
     instrument_check_page,
     landing_page,
