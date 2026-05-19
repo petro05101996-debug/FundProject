@@ -6,8 +6,8 @@ from investment_lab.data.legal_texts import NO_ADVICE_NOTICE, SESSION_DATA_NOTIC
 from investment_lab.data.mock_data import MODE_CARDS
 from investment_lab.data.profile_options import DRAWDOWN_OPTIONS, EXPERIENCE_OPTIONS, GOAL_OPTIONS, HORIZON_OPTIONS, LIQUIDITY_OPTIONS, option_index
 from investment_lab.domain.models import ScenarioAssumptions, UserConstraints
-from investment_lab.ui.components import action_bar, card, disclaimer, privacy_notice
-from investment_lab.ui.layout import go_to
+from legacy_streamlit.ui.components import action_bar, card, disclaimer, privacy_notice
+from legacy_streamlit.ui.layout import go_to
 
 
 def render() -> None:

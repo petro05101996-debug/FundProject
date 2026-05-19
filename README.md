@@ -1,36 +1,39 @@
 # FundProject
 
-## Investment Scenario Lab
+## Production architecture
 
-Investment Scenario Lab is an isolated Streamlit product module for comparing user-defined financial scenarios.
-It does not fetch market data, execute trades, provide brokerage services, or issue individual investment recommendations.
+FundProject now runs in production as:
 
-### Module structure
+- **React/Vite frontend** (served by nginx)
+- **FastAPI backend** (`/api/*`, `/health`)
+- **investment_lab engine/domain/data** for calculations
+
+Streamlit is no longer part of the production runtime. The previous Streamlit UI is moved to `legacy_streamlit/` only for historical comparison.
+
+## Module structure
 
 ```text
-investment_lab/
-  router.py
-  domain/                # dataclasses, statuses, input schema
-  data/                  # approved legal text, templates, educational content
-  engine/                # scenario comparison engine and safety text guard
-  ui/                    # dark app shell, components, charts
-    pages/               # landing, profile, instrument, scenario, portfolio, results, report, explain
+backend/                  # FastAPI app and API routes
+frontend/                 # React/Vite UI
+investment_lab/           # domain/data/engine/models (calculation core)
+legacy_streamlit/         # old Streamlit UI (not used in production)
+deploy/nginx.conf
+deploy/supervisord.conf
+Dockerfile
 ```
 
-### Run locally
-
-```bash
-streamlit run app.py --server.address=0.0.0.0 --server.port=8501
-```
-
-### Docker
+## Run with Docker
 
 ```bash
 docker build -t fundproject .
 docker run --rm -p 8501:8501 fundproject
 ```
 
-### Tests
+Open: <http://localhost:8501>
+
+Healthcheck: <http://localhost:8501/health>
+
+## Tests
 
 ```bash
 pytest -q

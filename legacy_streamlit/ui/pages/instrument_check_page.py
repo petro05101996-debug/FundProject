@@ -8,8 +8,8 @@ from investment_lab.engine.bond_calculator import calculate_bond
 from investment_lab.engine.deposit_calculator import calculate_deposit, calculate_savings_account
 from investment_lab.engine.fund_calculator import calculate_fund
 from investment_lab.engine.scenario_comparator import analyze_scenarios
-from investment_lab.ui.components import disclaimer, kpi_card, risk_chips, table_card
-from investment_lab.ui.formatters import format_money, format_pct
+from legacy_streamlit.ui.components import disclaimer, kpi_card, risk_chips, table_card
+from legacy_streamlit.ui.formatters import format_money, format_pct
 
 INSTRUMENT_TABS = ["Вклад", "Накопительный счёт", "ОФЗ", "Корпоративная облигация", "Фонд денежного рынка", "Облигационный фонд", "Индексный фонд", "Акция как класс"]
 
