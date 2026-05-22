@@ -1,0 +1,1 @@
+import React from 'react'; export default ({title='Пояснения',items}:{title?:string;items:string[]})=><aside className='side-panel'><h3>{title}</h3><ul>{items.map((i,idx)=><li key={idx}>{i}</li>)}</ul><p className='muted'>Не является индивидуальной инвестиционной рекомендацией.</p></aside>;

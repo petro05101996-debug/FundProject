@@ -1,0 +1,1 @@
+import React from 'react'; export default ({title,description,actions}:{title:string;description:string;actions?:React.ReactNode})=><div className='empty-state'><h3>{title}</h3><p>{description}</p>{actions&&<div className='row'>{actions}</div>}</div>;

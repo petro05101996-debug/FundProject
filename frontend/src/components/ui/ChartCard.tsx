@@ -1,0 +1,1 @@
+import React from 'react'; export default ({title,subtitle,children}:{title:string;subtitle?:string;children:React.ReactNode})=><section className='chart-card'><h4>{title}</h4>{subtitle&&<p className='muted'>{subtitle}</p>}{children}</section>;

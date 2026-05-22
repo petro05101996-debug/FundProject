@@ -1,0 +1,1 @@
+import React from 'react'; export default ({children,hint}:{children:React.ReactNode;hint?:string})=><div className='action-bar'>{hint&&<span className='muted'>{hint}</span>}<div className='row'>{children}</div></div>;
