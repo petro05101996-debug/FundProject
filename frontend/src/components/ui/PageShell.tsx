@@ -1,0 +1,2 @@
+import React from 'react';
+export default function PageShell({title,subtitle,eyebrow,actions,children}:{title:string;subtitle?:string;eyebrow?:string;actions?:React.ReactNode;children:React.ReactNode}){return <section className='page-shell'><header className='page-header'><div>{eyebrow&&<p className='eyebrow'>{eyebrow}</p>}<h1>{title}</h1>{subtitle&&<p className='muted'>{subtitle}</p>}</div>{actions&&<div>{actions}</div>}</header>{children}</section>}

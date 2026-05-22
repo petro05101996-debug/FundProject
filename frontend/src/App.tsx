@@ -29,5 +29,6 @@ export default function App(){
     report:<ReportPage result={analysisResult} onNavigate={setPage} />,
     explain:<ExplainInstrumentPage />,
   }[page]),[page,analysisResult,profile]);
+  if (page==='landing') return <LandingPage onStart={()=>setPage('profile')} onExplain={()=>setPage('explain')} />
   return <AppShell page={page} onNavigate={setPage}>{content}</AppShell>
 }

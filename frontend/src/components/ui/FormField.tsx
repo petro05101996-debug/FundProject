@@ -1,0 +1,1 @@
+import React from 'react'; export default ({label,hint,children}:{label:string;hint?:string;children:React.ReactNode})=><label className='form-field'><span>{label}</span>{hint&&<small className='muted'>{hint}</small>}{children}</label>;

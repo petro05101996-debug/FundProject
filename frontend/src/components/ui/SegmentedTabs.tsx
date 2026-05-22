@@ -1,0 +1,1 @@
+import React from 'react'; export default ({items,active,onChange}:{items:string[];active:string;onChange:(s:string)=>void})=><div className='segmented-tabs'>{items.map(i=><button key={i} className={`seg-btn ${i===active?'active':''}`} onClick={()=>onChange(i)}>{i}</button>)}</div>;

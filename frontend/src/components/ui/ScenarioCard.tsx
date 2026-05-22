@@ -1,0 +1,1 @@
+import React from 'react'; export default ({children,title,meta}:{children:React.ReactNode;title:string;meta:string})=><section className='scenario-card'><div className='row' style={{justifyContent:'space-between'}}><h3>{title}</h3><span className='pill'>{meta}</span></div>{children}</section>;

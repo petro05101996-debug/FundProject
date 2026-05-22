@@ -1,12 +1,5 @@
 import React from 'react';
-
+import { AppHeader, AppSidebar } from './ui';
 type PageKey = 'landing'|'profile'|'instrument'|'builder'|'portfolio'|'results'|'report'|'explain';
-const items:{key:PageKey;label:string}[]=[
-  {key:'landing',label:'Лендинг'},{key:'profile',label:'Параметры сценария'},{key:'instrument',label:'Проверить инструмент'},
-  {key:'builder',label:'Сравнить варианты'},{key:'portfolio',label:'Проверить портфель'},{key:'results',label:'Итог'},{key:'report',label:'Отчёт'},{key:'explain',label:'Объяснить инструмент'}
-];
-export default function AppShell({children,page,onNavigate}:{children:React.ReactNode;page:PageKey;onNavigate:(k:PageKey)=>void}){
-  return <div className='shell'><header className='topbar'><b>Investment Scenario Lab</b><button className='btn' onClick={()=>onNavigate('profile')}>Начать проверку</button></header>
-  <div className='layout'><aside className='sidebar'>{items.map(i=><button key={i.key} className={page===i.key?'nav active':'nav'} onClick={()=>onNavigate(i.key)}>{i.label}</button>)}</aside>
-  <main className='content'>{children}</main></div><footer className='footer'>Это не является индивидуальной инвестиционной рекомендацией.</footer></div>
-}
+const groups=[{title:'Старт',items:[{key:'profile',label:'Параметры сценария'}]},{title:'Анализ',items:[{key:'instrument',label:'Проверить инструмент'},{key:'builder',label:'Сравнить варианты'},{key:'portfolio',label:'Проверить портфель'}]},{title:'Итоги',items:[{key:'results',label:'Итоги анализа'},{key:'report',label:'Отчёт'}]},{title:'Справка',items:[{key:'explain',label:'Объяснить инструмент'}]}];
+export default function AppShell({children,page,onNavigate}:{children:React.ReactNode;page:PageKey;onNavigate:(k:PageKey)=>void}){return <div className='app-shell'><AppHeader onStart={()=>onNavigate('instrument')}/><div className='workspace-top card soft'><div className='row'><span className='muted'>Рабочее пространство</span><span className='pill'>Основной проект</span></div><div className='row'><span className='pill'>Ад</span><span className='muted'>Аналитик</span></div></div><div className='layout'><AppSidebar groups={groups as any} page={page} onNavigate={onNavigate}/><main className='app-content'>{children}</main></div></div>}

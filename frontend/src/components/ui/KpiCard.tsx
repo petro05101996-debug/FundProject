@@ -1,0 +1,1 @@
+import React from 'react'; export default ({label,value,hint}:{label:string;value:string;hint?:string})=><div className='kpi-card'><div className='muted'>{label}</div><div className='metric-value'>{value}</div>{hint&&<small className='muted'>{hint}</small>}</div>;

@@ -1,0 +1,2 @@
+import React from 'react';
+export default function AppSidebar({groups,page,onNavigate}:{groups:{title:string;items:{key:any;label:string}[]}[];page:string;onNavigate:(k:any)=>void}){return <aside className='app-sidebar'>{groups.map(g=><div key={g.title}><p className='muted'>{g.title}</p>{g.items.map(i=><button key={i.key} className={page===i.key?'nav active':'nav'} onClick={()=>onNavigate(i.key)}>{i.label}</button>)}</div>)}</aside>}
