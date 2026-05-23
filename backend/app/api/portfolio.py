@@ -1,5 +1,5 @@
 from __future__ import annotations
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 import pandas as pd
 
@@ -18,6 +18,22 @@ class PortfolioCheckRequest(BaseModel):
 @router.post('/check')
 def portfolio_check(req: PortfolioCheckRequest):
     rows = req.positions
+    if not rows:
+        raise HTTPException(status_code=422, detail='Добавьте хотя бы одну позицию портфеля')
+    required_fields = {"name", "asset_class", "market_value"}
+    for idx, row in enumerate(rows):
+        if not required_fields.issubset(row.keys()):
+            raise HTTPException(status_code=422, detail=f'Позиция #{idx + 1} заполнена неполно')
+        if not str(row.get("name", "")).strip():
+            raise HTTPException(status_code=422, detail=f'Позиция #{idx + 1}: название не заполнено')
+        if not str(row.get("asset_class", "")).strip():
+            raise HTTPException(status_code=422, detail=f'Позиция #{idx + 1}: класс актива не заполнен')
+        try:
+            market_value = float(row.get("market_value"))
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=422, detail=f'Позиция #{idx + 1}: market_value должен быть числом')
+        if market_value <= 0:
+            raise HTTPException(status_code=422, detail=f'Позиция #{idx + 1}: market_value должен быть больше 0')
     metrics = portfolio_metrics(rows)
     df = pd.DataFrame(rows)
     scenario = analyze_scenarios(df, ScenarioAssumptions(**req.assumptions), UserConstraints(**req.constraints)) if not df.empty else {}

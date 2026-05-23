@@ -10,6 +10,20 @@ FundProject now runs in production as:
 
 Streamlit is no longer part of the production runtime. The previous Streamlit UI is moved to `archived_streamlit_reference/` only for historical comparison.
 
+## Production runtime
+
+Production runtime uses:
+
+- React/Vite static frontend
+- FastAPI backend
+- nginx reverse proxy
+- supervisor
+- port 8080
+- healthcheck endpoint `/health`
+
+Streamlit is not used as production runtime.
+Old Streamlit files, if present, are legacy/archive only.
+
 ## Module structure
 
 ```text

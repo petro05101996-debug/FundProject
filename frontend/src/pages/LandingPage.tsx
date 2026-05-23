@@ -36,12 +36,12 @@ export default function LandingPage({ onStart, onExplain }: { onStart: () => voi
               </div>
             </div>
             <nav>
-              <a>Возможности</a><a>Как это работает</a><a>Тарифы</a><a>Примеры</a><a>База знаний</a><a>О проекте</a>
+              <a href='#features'>Возможности</a><a href='#how-it-works'>Как это работает</a><a href='#about'>О проекте</a>
             </nav>
             <div className='toolbar-right'>
               <button className='icon-btn'><Moon size={14} /></button>
-              <button className='link-btn'>Войти</button>
-              <button className='btn outline'>Войти в сервис</button>
+              <button className='link-btn' onClick={onStart}>Начать</button>
+              <button className='btn outline' onClick={onStart}>Перейти к расчёту</button>
             </div>
           </header>
 
@@ -73,17 +73,17 @@ export default function LandingPage({ onStart, onExplain }: { onStart: () => voi
             </aside>
           </div>
 
-          <section className='feature-grid'>
+          <section id='features' className='feature-grid'>
             <div className='feature-card'><h3><BarChart3 size={15} />Сравнение сценариев</h3><p>Сопоставьте свои варианты по доходности, риску, просадкам, ликвидности, комиссиям и налогам.</p></div>
             <div className='feature-card'><h3><Shield size={15} />Паспорт рисков и флаги рисков</h3><p>Видите ключевые риски по каждой позиции и по портфелю: концентрация, корреляция, валютные риски и другое.</p></div>
             <div className='feature-card'><h3><Activity size={15} />Стресс-тестирование</h3><p>Проверяйте устойчивость портфеля в исторических и гипотетических стресс-сценариях.</p></div>
             <div className='feature-card'><h3><FileText size={15} />Прозрачный отчёт</h3><p>Получайте понятный отчёт с допущениями, расчётами и выводами. Удобно сохранить или поделиться.</p></div>
           </section>
 
-          <section className='bottom-grid'>
+          <section id='how-it-works' className='bottom-grid'>
             <div className='card'><h3>Как это работает</h3><div className='how-steps'><p><b>1</b> Загрузите данные или создайте сценарии</p><p><b>2</b> Мы рассчитаем и проверим</p><p><b>3</b> Получите отчёт и сравните</p></div></div>
             <div className='card'><h3>Что делает сервис</h3><ul><li><Check size={14} />Анализирует ваши сценарии и данные</li><li><Check size={14} />Оценивает риск, ликвидность, комиссии и налоги</li><li><Check size={14} />Проводит стресс-тестирование</li></ul></div>
-            <div className='card'><h3>Что сервис НЕ делает</h3><ul><li><X size={14} />Не даёт индивидуальные инвестрекомендации</li><li><X size={14} />Не говорит, что покупать, продавать или держать</li><li><X size={14} />Не принимает решения за клиента</li></ul></div>
+            <div id='about' className='card'><h3>Что сервис НЕ делает</h3><ul><li><X size={14} />Не даёт индивидуальные инвестрекомендации</li><li><X size={14} />Не говорит, что покупать, продавать или держать</li><li><X size={14} />Не принимает решения за клиента</li></ul></div>
           </section>
 
           <footer className='mock-footer'>
