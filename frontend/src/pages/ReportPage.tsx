@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FileText, Share2 } from 'lucide-react';
 import { api, ApiError } from '../api/client';
 import { EmptyState, ReportPaper } from '../components/ui';
@@ -6,10 +6,13 @@ import { EmptyState, ReportPaper } from '../components/ui';
 export default function ReportPage({ result, onNavigate }: { result: any; onNavigate: (k: any) => void }) {
   const [html, setHtml] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [reportMeta, setReportMeta] = useState<{ report_id?: string; created_at?: string }>({});
   const toc = ['1. Дисклеймер', '2. Параметры пользователя', '3. Выбранные сценарии', '4. Сравнение сценариев', '5. Риск-флаги', '6. Стресс-сценарии', '7. Денежные потоки', '8. Расчётные допущения', '9. Ограничения анализа', '10. Чек-лист'];
 
   const build = async () => {
+    if (loading) return;
+    setLoading(true);
     setError('');
     try {
       const r = await api('/api/report/build', { method: 'POST', body: JSON.stringify({ result }) });
@@ -17,8 +20,16 @@ export default function ReportPage({ result, onNavigate }: { result: any; onNavi
       setReportMeta({ report_id: r.report_id, created_at: r.created_at });
     } catch (e: any) {
       setError(e instanceof ApiError ? e.message : 'Ошибка отчёта');
+    } finally {
+      setLoading(false);
     }
   };
+  useEffect(() => {
+    if (result && !html && !error) {
+      void build();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result]);
 
   const download = () => {
     const a = document.createElement('a');
@@ -36,7 +47,7 @@ export default function ReportPage({ result, onNavigate }: { result: any; onNavi
         <span className='pill'>ID отчёта: {reportMeta.report_id || 'нет данных'}</span>
         <button className='btn ghost' onClick={download} disabled={!html}><FileText size={14} />Экспорт HTML</button>
         <button className='btn ghost' disabled title='Будет доступно позже'><Share2 size={14} />Поделиться</button>
-        <button className='btn' onClick={build}>Сформировать отчёт</button>
+        <button className='btn' onClick={build} disabled={loading}>{loading ? 'Формируем...' : 'Сформировать отчёт'}</button>
       </div>
 
       <div className='report-layout'>
@@ -49,10 +60,11 @@ export default function ReportPage({ result, onNavigate }: { result: any; onNavi
         </aside>
 
         <div>
+          {loading && <div className='info-banner'>Формируем отчёт...</div>}
           {html ? <ReportPaper html={html} /> : (
             <article className='report-paper'>
               <h1>Аналитический отчёт по пользовательскому сценарию</h1>
-              <p>Нажмите «Сформировать отчёт», чтобы построить полный документ с таблицами и графиками.</p>
+              <p>Отчёт формируется автоматически. Если данные не появились, нажмите «Сформировать отчёт» повторно.</p>
             </article>
           )}
           {error && <div className='error-banner'>Не удалось сформировать отчёт. Проверьте, что сценарий рассчитан корректно, и повторите попытку. <small>{error}</small></div>}

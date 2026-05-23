@@ -8,16 +8,23 @@ const defaults: any = {
   'Вклад': { amount: 1000000, annual_rate_pct: 12, term_months: 12, tax_pct: 13 },
   'Накопительный счёт': { amount: 1000000, annual_rate_pct: 10, term_months: 12, tax_pct: 13 },
   'ОФЗ': { amount: 1000000, clean_price_pct: 98.5, nominal: 1000, coupon_pct: 10, years_to_maturity: 2.8, nkd: 41.27, commission_pct: 0.1, tax_pct: 13, liquidity_days: 3, issuer_rating: 'A (низкий риск)', coupon_period: 'Полугодовая' },
-  'Корпоративная облигация': { amount: 1000000, coupon_pct: 12, years_to_maturity: 3, clean_price_pct: 95, commission_pct: 0.3, default_risk_pct: 2, tax_pct: 13 },
-  'Фонд денежного рынка': { amount: 1000000, expected_return_pct: 10, management_fee_pct: 0.5, term_months: 12, tax_pct: 13 },
-  'Индексный фонд': { amount: 1000000, expected_return_pct: 16, management_fee_pct: 1.2, term_months: 36, tax_pct: 13, stress_drawdown_pct: -20 }
+  'Корпоративная облигация': { amount: 1000000, nominal: 1000, clean_price_pct: 95, coupon_pct: 12, coupon_period: 'Полугодовая', years_to_maturity: 3, nkd: 0, issuer_rating: 'BBB (умеренный риск)', tax_pct: 13, commission_pct: 0.3, liquidity_days: 7, default_risk_pct: 2 },
+  'Фонд денежного рынка': { amount: 1000000, expected_return_pct: 10, management_fee_pct: 0.5, term_months: 12, stress_drawdown_pct: -5, tax_pct: 13, commission_pct: 0.1, liquidity_days: 1 },
+  'Индексный фонд': { amount: 1000000, expected_return_pct: 16, management_fee_pct: 1.2, term_months: 36, stress_drawdown_pct: -20, tax_pct: 13, commission_pct: 0.2, liquidity_days: 3 }
 };
 
-const fieldOrder = ['amount', 'nkd', 'clean_price_pct', 'issuer_rating', 'nominal', 'liquidity_days', 'coupon_pct', 'commission_pct', 'years_to_maturity', 'coupon_period', 'tax_pct'];
-const labels: Record<string, string> = {
-  amount: 'Сумма инвестиций', nkd: 'НКД (накопленный купонный доход)', clean_price_pct: 'Цена', issuer_rating: 'Кредитный риск (рейтинг эмитента)', nominal: 'Номинал', liquidity_days: 'Ликвидность (средний срок выхода)', coupon_pct: 'Купон (годовой)', commission_pct: 'Комиссия', years_to_maturity: 'Срок до погашения', coupon_period: 'Периодичность купона', tax_pct: 'Ставка налога'
+const instrumentFieldConfig: Record<string, string[]> = {
+  'Вклад': ['amount', 'annual_rate_pct', 'term_months', 'tax_pct'],
+  'Накопительный счёт': ['amount', 'annual_rate_pct', 'term_months', 'tax_pct'],
+  'ОФЗ': ['amount', 'nominal', 'clean_price_pct', 'coupon_pct', 'coupon_period', 'years_to_maturity', 'nkd', 'tax_pct', 'commission_pct', 'liquidity_days'],
+  'Корпоративная облигация': ['amount', 'nominal', 'clean_price_pct', 'coupon_pct', 'coupon_period', 'years_to_maturity', 'nkd', 'issuer_rating', 'tax_pct', 'commission_pct', 'liquidity_days'],
+  'Фонд денежного рынка': ['amount', 'expected_return_pct', 'management_fee_pct', 'term_months', 'stress_drawdown_pct', 'tax_pct', 'commission_pct', 'liquidity_days'],
+  'Индексный фонд': ['amount', 'expected_return_pct', 'management_fee_pct', 'term_months', 'stress_drawdown_pct', 'tax_pct', 'commission_pct', 'liquidity_days'],
 };
-const suffixes: Record<string, string> = { amount: '₽', nkd: '₽', clean_price_pct: '% от номинала', nominal: '₽', liquidity_days: 'дней', coupon_pct: '%', commission_pct: '%', years_to_maturity: 'лет', tax_pct: '%' };
+const labels: Record<string, string> = {
+  amount: 'Сумма инвестиций', annual_rate_pct: 'Годовая ставка', term_months: 'Срок', expected_return_pct: 'Ожидаемая доходность', management_fee_pct: 'Комиссия управления', stress_drawdown_pct: 'Стресс-просадка', nkd: 'НКД (накопленный купонный доход)', clean_price_pct: 'Цена', issuer_rating: 'Кредитный риск (рейтинг эмитента)', nominal: 'Номинал', liquidity_days: 'Ликвидность (средний срок выхода)', coupon_pct: 'Купон (годовой)', commission_pct: 'Комиссия', years_to_maturity: 'Срок до погашения', coupon_period: 'Периодичность купона', tax_pct: 'Ставка налога'
+};
+const suffixes: Record<string, string> = { amount: '₽', annual_rate_pct: '%', term_months: 'мес.', expected_return_pct: '%', management_fee_pct: '%', stress_drawdown_pct: '%', nkd: '₽', clean_price_pct: '% от номинала', nominal: '₽', liquidity_days: 'дней', coupon_pct: '%', commission_pct: '%', years_to_maturity: 'лет', tax_pct: '%' };
 
 export default function InstrumentCheckPage() {
   const [tab, setTab] = useState('ОФЗ');
@@ -25,7 +32,7 @@ export default function InstrumentCheckPage() {
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState('');
 
-  const rows = useMemo(() => fieldOrder.filter((k) => params[k] !== undefined), [params]);
+  const rows = useMemo(() => instrumentFieldConfig[tab] ?? Object.keys(params), [params, tab]);
 
   const onTab = (t: string) => {
     setTab(t);
@@ -43,12 +50,12 @@ export default function InstrumentCheckPage() {
   };
 
   const metric = {
-    value: result?.expected_value ?? '1 230 450 ₽',
-    irr: result?.irr ?? '10,21%',
-    stress: result?.stress_drawdown ?? '-7,9%',
-    liq: result?.liquidity_label ?? '3 дня',
-    risk: result?.risk_label ?? 'Низкий',
-    complexity: result?.complexity_label ?? 'Низкая',
+    value: result?.expected_value ?? '—',
+    irr: result?.irr ?? '—',
+    stress: result?.stress_drawdown ?? '—',
+    liq: result?.liquidity_label ?? '—',
+    risk: result?.risk_label ?? '—',
+    complexity: result?.complexity_label ?? '—',
   };
 
   return (
@@ -62,7 +69,7 @@ export default function InstrumentCheckPage() {
               <label className='form-field inst-field' key={k}>
                 <span>{labels[k] || k}</span>
                 <div className='input-wrap'>
-                  <input value={String(params[k])} onChange={(e) => setParams({ ...params, [k]: isNaN(Number(e.target.value)) ? e.target.value : Number(e.target.value) })} />
+                  <input value={String(params[k] ?? '')} onChange={(e) => setParams({ ...params, [k]: isNaN(Number(e.target.value)) ? e.target.value : Number(e.target.value) })} />
                   {suffixes[k] && <em>{suffixes[k]}</em>}
                 </div>
               </label>
@@ -70,12 +77,13 @@ export default function InstrumentCheckPage() {
           </div>
           <div className='row'>
             <button className='btn' onClick={onCalc}><BarChart3 size={14} />Рассчитать инструмент</button>
-            <button className='btn ghost'>Использовать в сценарии</button>
+            <button className='btn ghost' disabled title='Будет доступно в следующей версии'>Использовать в сценарии</button>
           </div>
         </article>
 
         <aside className='card'>
           <h3>Предварительная оценка</h3>
+          {!result && <p className='muted'>Заполните параметры и нажмите «Рассчитать».</p>}
           <ul className='rules-list metrics-list'>
             <li><TrendingUp size={15} />Ожидаемая стоимость: <b>{metric.value}</b></li>
             <li><CirclePercent size={15} />Ориентир дохода (IRR): <b>{metric.irr}</b></li>
