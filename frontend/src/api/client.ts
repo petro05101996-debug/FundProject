@@ -33,3 +33,9 @@ export async function api<T = any>(path: string, options: RequestInit = {}): Pro
     window.clearTimeout(timeout);
   }
 }
+
+export const getScenarioTemplates=()=>api<any[]>('/api/scenarios/templates');
+export const startDialog=(scenarioTemplateId:string)=>api<any>('/api/dialog/start',{method:'POST',body:JSON.stringify({scenario_template_id:scenarioTemplateId})});
+export const answerDialog=(sessionState:any,questionId:string,answer:any)=>api<any>('/api/dialog/answer',{method:'POST',body:JSON.stringify({session_state:sessionState,question_id:questionId,answer})});
+export const getDialogPreview=(sessionState:any)=>api<any>('/api/dialog/preview',{method:'POST',body:JSON.stringify({session_state:sessionState})});
+export const analyzeGuided=(sessionState:any)=>api<any>('/api/analyze/guided',{method:'POST',body:JSON.stringify({session_state:sessionState})});

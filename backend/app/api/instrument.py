@@ -5,6 +5,7 @@ from investment_lab.data.instrument_catalog import INSTRUMENT_CATALOG
 from investment_lab.engine.bond_calculator import calculate_bond
 from investment_lab.engine.deposit_calculator import calculate_deposit, calculate_savings_account
 from investment_lab.engine.fund_calculator import calculate_fund
+from investment_lab.data.legal_texts import API_DISCLAIMER
 
 router = APIRouter()
 
@@ -107,7 +108,11 @@ def check_instrument(req: InstrumentCheckRequest):
         coupon_freq = coupon_frequency(p.get('coupon_frequency', p.get('coupon_period', 2)))
         default_risk = to_float(p.get('default_risk_pct'), 'default_risk_pct', 0 if t == 'ОФЗ' else default_risk_from_rating(p.get('issuer_rating')))
         calc=calculate_bond(amount,accrued_coupon,to_float(p.get('clean_price_pct',95), 'clean_price_pct', 95),to_float(p.get('nominal',1000), 'nominal', 1000),to_float(p.get('coupon_pct',10), 'coupon_pct', 10),to_float(p.get('years_to_maturity',2), 'years_to_maturity', 2),coupon_freq,to_float(p.get('commission_pct',0.2), 'commission_pct', 0),tax_pct,default_risk)
-        expected,income=float(calc['final_after_tax']),float(calc['final_after_tax'])-amount; risk_flags=clean_flags([calc.get('interest_rate_risk_flag'),calc.get('sell_before_maturity_flag')])
+        base_expected=float(calc['final_after_tax'])
+        risk_adjusted=float(calc.get('risk_adjusted_final_after_tax', base_expected))
+        expected = risk_adjusted if t == 'Корпоративная облигация' else base_expected
+        income=expected-amount
+        risk_flags=clean_flags([calc.get('interest_rate_risk_flag'),calc.get('sell_before_maturity_flag'), 'Риск эмитента повышает оценку потерь.' if t == 'Корпоративная облигация' and float(default_risk) >= 2 else None])
     elif t in {'Фонд денежного рынка', 'Индексный фонд', 'Облигационный фонд', 'Акция как класс риска'}:
         calc=calculate_fund(amount,to_float(p.get('expected_return_pct',10), 'expected_return_pct', 0),to_float(p.get('management_fee_pct',0.8), 'management_fee_pct', 0),to_int(p.get('term_months',12), 'term_months', 12),tax_pct,to_float(p.get('tracking_error_pct',0.5), 'tracking_error_pct', 0.5))
         expected,income=float(calc['final_after_tax']),float(calc['final_after_tax'])-amount; risk_flags=clean_flags([calc.get('tracking_error_note'),calc.get('liquidity_note'),'Оценка класса риска, а не расчёт конкретной акции.' if t=='Акция как класс риска' else None])
@@ -115,4 +120,9 @@ def check_instrument(req: InstrumentCheckRequest):
         raise HTTPException(status_code=422, detail='Неизвестный тип инструмента')
     stress_default = -20 if 'Акция' in t or 'Индексный' in t else -8
     stress_drawdown = to_float(p.get('stress_drawdown_pct', stress_default), 'stress_drawdown_pct', stress_default)
-    return {'instrument_type':t,'explanation':'Инструмент имеет такие последствия при введённых параметрах.','expected_value':expected,'income_estimate':income,'stress_drawdown':stress_drawdown,'liquidity_label':liquidity_label,'risk_label':risk_label,'complexity_label':complexity_label,'risk_flags':risk_flags,'assumptions':p,'limitations':['Оценка основана на пользовательском вводе и упрощённых сценарных допущениях.'],'checklist':checklist}
+    payload={'instrument_type':t,'explanation':'Инструмент имеет такие последствия при введённых параметрах.','expected_value':expected,'income_estimate':income,'stress_drawdown':stress_drawdown,'liquidity_label':liquidity_label,'risk_label':risk_label,'complexity_label':complexity_label,'risk_flags':risk_flags,'assumptions':p,'limitations':['Оценка основана на пользовательском вводе и упрощённых сценарных допущениях.'],'checklist':checklist,'disclaimer':API_DISCLAIMER}
+    if t in {'ОФЗ','Корпоративная облигация'}:
+        payload['base_expected_value']=float(calc['final_after_tax'])
+        payload['risk_adjusted_expected_value']=float(calc.get('risk_adjusted_final_after_tax', calc['final_after_tax']))
+        payload['expected_loss_amount']=float(calc.get('expected_loss_amount', 0.0))
+    return payload
