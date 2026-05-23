@@ -19,6 +19,15 @@ def calculate_deposit(amount: float, annual_rate_pct: float, term_months: int, c
         "final_amount": amount + net_interest,
         "early_withdrawal_note": "Досрочное снятие может изменить процентный результат." if early_withdrawal else "Досрочное снятие не учтено в базовом расчёте.",
         "insurance_limit_note": f"Проверьте лимит страхования: {insurance_limit:,.0f} {currency}.",
+        "methodology": {
+            "model_type": "simplified_deposit_calculation",
+            "is_simplified": True,
+            "limitations": [
+                "налоговая оценка упрощена",
+                "условия досрочного снятия зависят от банка",
+                "страхование вкладов не является расчётной гарантией доходности",
+            ],
+        },
     }
 
 
@@ -33,4 +42,13 @@ def calculate_savings_account(amount: float, annual_rate_pct: float, term_months
         "net_interest": gross_interest - tax,
         "rate_change_risk": "Ставка может измениться по условиям банка.",
         "withdrawal_note": "Снятие возможно по пользовательскому допущению." if withdrawals_allowed else "Снятие может ограничиваться условиями счёта.",
+        "methodology": {
+            "model_type": "simplified_savings_account_calculation",
+            "is_simplified": True,
+            "limitations": [
+                "налоговая оценка упрощена",
+                "условия досрочного снятия зависят от банка",
+                "ставка может изменяться по условиям банка",
+            ],
+        },
     }

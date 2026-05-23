@@ -10,12 +10,15 @@ def weighted_average(rows: list[dict], value_key: str, weight_key: str = "market
 
 
 def portfolio_metrics(rows: list[dict]) -> dict[str, float]:
+    # NOTE: this is a weighted average of instrument volatilities, not full portfolio volatility with correlations.
     total = sum(float(row.get("market_value", 0) or 0) for row in rows)
     sorted_weights = sorted([(float(row.get("market_value", 0) or 0) / total * 100) if total else 0 for row in rows], reverse=True)
+    weighted_avg_vol = weighted_average(rows, "volatility_pct")
     return {
         "portfolio_value": total,
         "weighted_return": weighted_average(rows, "expected_return_pct"),
-        "weighted_volatility": weighted_average(rows, "volatility_pct"),
+        "weighted_average_volatility": weighted_avg_vol,
+        "weighted_volatility": weighted_avg_vol,
         "weighted_liquidity": weighted_average(rows, "liquidity_days"),
         "weighted_fee": weighted_average(rows, "annual_fee_pct"),
         "tax_drag": weighted_average(rows, "tax_pct"),

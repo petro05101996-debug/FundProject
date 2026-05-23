@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Download, FileText, Share2 } from 'lucide-react';
+import { FileText, Share2 } from 'lucide-react';
 import { api, ApiError } from '../api/client';
 import { EmptyState, ReportPaper } from '../components/ui';
 
 export default function ReportPage({ result, onNavigate }: { result: any; onNavigate: (k: any) => void }) {
   const [html, setHtml] = useState('');
   const [error, setError] = useState('');
+  const [reportMeta, setReportMeta] = useState<{ report_id?: string; created_at?: string }>({});
   const toc = ['1. Дисклеймер', '2. Параметры пользователя', '3. Выбранные сценарии', '4. Сравнение сценариев', '5. Риск-флаги', '6. Стресс-сценарии', '7. Денежные потоки', '8. Расчётные допущения', '9. Ограничения анализа', '10. Чек-лист'];
 
   const build = async () => {
@@ -13,6 +14,7 @@ export default function ReportPage({ result, onNavigate }: { result: any; onNavi
     try {
       const r = await api('/api/report/build', { method: 'POST', body: JSON.stringify({ result }) });
       setHtml(r.html || '');
+      setReportMeta({ report_id: r.report_id, created_at: r.created_at });
     } catch (e: any) {
       setError(e instanceof ApiError ? e.message : 'Ошибка отчёта');
     }
@@ -25,16 +27,15 @@ export default function ReportPage({ result, onNavigate }: { result: any; onNavi
     a.click();
   };
 
-  if (!result) return <EmptyState title='Нет данных для отчёта' description='Сначала сформируйте итоги анализа.' actions={<button className='btn' onClick={() => onNavigate('results')}>К итогам</button>} />;
+  if (!result) return <EmptyState title='Нет данных для отчёта' description='Сначала выполните сценарный анализ. После расчёта здесь появится аналитический отчёт.' actions={<button className='btn' onClick={() => onNavigate('results')}>К итогам</button>} />;
 
   return (
     <div className='report-shell report-dark'>
       <div className='report-toolbar row'>
-        <span className='pill'>Сформировано: 15 мая 2024, 12:45</span>
-        <span className='pill'>ID отчёта: RPT-2024-05-15-1245</span>
-        <button className='btn ghost' onClick={download} disabled={!html}><Download size={14} />Скачать PDF</button>
+        <span className='pill'>Сформировано: {reportMeta.created_at || 'нет данных'}</span>
+        <span className='pill'>ID отчёта: {reportMeta.report_id || 'нет данных'}</span>
         <button className='btn ghost' onClick={download} disabled={!html}><FileText size={14} />Экспорт HTML</button>
-        <button className='btn ghost'><Share2 size={14} />Поделиться</button>
+        <button className='btn ghost' disabled title='Будет доступно позже'><Share2 size={14} />Поделиться</button>
         <button className='btn' onClick={build}>Сформировать отчёт</button>
       </div>
 
@@ -54,7 +55,7 @@ export default function ReportPage({ result, onNavigate }: { result: any; onNavi
               <p>Нажмите «Сформировать отчёт», чтобы построить полный документ с таблицами и графиками.</p>
             </article>
           )}
-          {error && <div className='error-banner'>{error}</div>}
+          {error && <div className='error-banner'>Не удалось сформировать отчёт. Проверьте, что сценарий рассчитан корректно, и повторите попытку. <small>{error}</small></div>}
         </div>
       </div>
     </div>

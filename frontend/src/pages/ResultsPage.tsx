@@ -12,6 +12,10 @@ export default function ResultsPage({ profile, result, onReport, onNavigate }: {
   if (!result) return <EmptyState title='Пока нет результата анализа' description='Сначала рассчитайте сценарий или портфель.' actions={<><button className='btn' onClick={() => onNavigate('builder')}>Перейти к сравнению вариантов</button><button className='btn ghost' onClick={() => onNavigate('portfolio')}>Проверить портфель</button></>} />;
 
   const top = (result.summary || [])[0] || {};
+  const isGoodFit = top.status === 'Лучше соответствует заданным ограничениям' || Number(top.constraint_fit_score ?? 0) >= 75;
+  const stressValue = top.worst_stress_value ?? (top.portfolio_value != null && top.worst_stress_impact_pct != null ? Number(top.portfolio_value) * Number(top.worst_stress_impact_pct) / 100 : null);
+  const formatMoney = (v: any) => (v == null ? 'нет данных' : `${Number(v).toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽`);
+  const formatPct = (v: any) => (v == null ? 'нет данных' : `${Number(v).toFixed(1)}%`);
 
   const recalc = async () => {
     setError('');
@@ -24,14 +28,14 @@ export default function ResultsPage({ profile, result, onReport, onNavigate }: {
 
   return (
     <PageShell title='Итог по выбранным пользовательским сценариям' subtitle='Сравните ожидаемые результаты, риски и стресс-сценарии' actions={<button className='btn' onClick={onReport}><Download size={14} />Сформировать аналитический отчёт</button>}>
-      <div className='card soft' style={{ marginBottom: 10 }}><p><CheckCircle2 size={14} /> Сценарий «{top.scenario || 'A'}» лучше соответствует заданным пользовательским ограничениям.</p></div>
+      <div className='card soft' style={{ marginBottom: 10 }}><p><CheckCircle2 size={14} /> {isGoodFit ? `Сценарий «${top.scenario || 'A'}» лучше соответствует заданным пользовательским ограничениям.` : `Сценарий «${top.scenario || 'A'}» имеет риск-флаги и требует ручной проверки.`}</p></div>
 
       <div className='kpi-strip'>
-        <div className='kpi-card'><small>Базовый результат</small><strong>{top.projected_value || '12 540 000 ₽'}</strong><em><TrendingUp size={12} /> +18,6%</em></div>
-        <div className='kpi-card'><small>Стресс-результат</small><strong>{top.stress_value || '10 210 000 ₽'}</strong><em><TrendingDown size={12} /> -18,3%</em></div>
-        <div className='kpi-card'><small>Ликвидность</small><strong>{top.liquidity_30d_pct ? `${top.liquidity_30d_pct}%` : 'Высокая'}</strong><em>оценка</em></div>
-        <div className='kpi-card'><small>Риск</small><strong>{top.risk_label || 'Средний'}</strong><em>оценка</em></div>
-        <div className='kpi-card'><small>Сложность</small><strong>{top.complexity_label || 'Средняя'}</strong><em>оценка</em></div>
+        <div className='kpi-card'><small>Итоговая стоимость</small><strong>{formatMoney(top.projected_value)}</strong><em><TrendingUp size={12} /> чистая доходность: {formatPct(top.net_return_pct)}</em></div>
+        <div className='kpi-card'><small>Стресс-просадка</small><strong>{formatPct(top.worst_stress_impact_pct)}</strong><em><TrendingDown size={12} /> денежная просадка: {formatMoney(stressValue)}</em></div>
+        <div className='kpi-card'><small>Ликвидность до 30 дней</small><strong>{formatPct(top.liquid_within_30d_pct)}</strong><em>оценка</em></div>
+        <div className='kpi-card'><small>Риск</small><strong>{top.risk_label ?? 'нет данных'}</strong><em>оценка</em></div>
+        <div className='kpi-card'><small>Балл соответствия</small><strong>{top.constraint_fit_score ?? 'нет данных'}</strong><em>{top.status ?? 'нет данных'}</em></div>
       </div>
 
       <section className='scenario-main-grid results-final-grid'>
@@ -41,7 +45,7 @@ export default function ResultsPage({ profile, result, onReport, onNavigate }: {
             <thead><tr><th>#</th><th>Сценарий</th><th>Базовый</th><th>Стресс</th><th>Риск</th><th>Статус</th></tr></thead>
             <tbody>
               {(result.summary || []).slice(0, 5).map((r: any, i: number) => (
-                <tr key={i}><td>{i + 1}</td><td>{r.scenario}</td><td>{r.projected_value}</td><td>{r.stress_value}</td><td>{r.risk_label}</td><td>{r.constraint_match_label || '—'}</td></tr>
+                <tr key={i}><td>{i + 1}</td><td>{r.scenario}</td><td>{formatMoney(r.projected_value)}</td><td>{formatPct(r.worst_stress_impact_pct)}</td><td>{r.risk_label ?? '—'}</td><td>{r.status ?? '—'}</td></tr>
               ))}
             </tbody>
           </table>
