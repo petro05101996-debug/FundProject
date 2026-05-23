@@ -28,8 +28,11 @@ legacy_streamlit/ # old streamlit app/router/ui
 
 ```bash
 docker build -t fundproject .
-docker run --rm -p 8501:8501 fundproject
+docker run --rm -p 8080:8080 fundproject
 ```
 
-- UI: `http://localhost:8501/`
-- Health: `http://localhost:8501/health`
+- UI: `http://localhost:8080/`
+- Health: `http://localhost:8080/health`
+
+
+> Streamlit UI находится только в `archived_streamlit_reference/` и не используется в production runtime.

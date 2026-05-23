@@ -14,6 +14,8 @@ def calculate_bond(amount: float, accrued_coupon: float, clean_price_pct: float,
     tax_on_price_gain = max(price_gain, 0) * tax_pct / 100
     commission = amount * commission_pct / 100
     final_after_tax = amount + coupon_total + price_gain - tax_on_coupon - tax_on_price_gain - commission
+    expected_loss_amount = final_after_tax * max(default_risk_pct, 0) / 100
+    risk_adjusted_final_after_tax = final_after_tax - expected_loss_amount
     ytm = ((nominal - dirty_price) / max(years_to_maturity, 0.1) + annual_coupon) / max(dirty_price, 1) * 100 - default_risk_pct
     return {
         "dirty_price": dirty_price,
@@ -22,6 +24,8 @@ def calculate_bond(amount: float, accrued_coupon: float, clean_price_pct: float,
         "tax_on_coupon": tax_on_coupon,
         "tax_on_price_gain": tax_on_price_gain,
         "final_after_tax": final_after_tax,
+        "expected_loss_amount": expected_loss_amount,
+        "risk_adjusted_final_after_tax": risk_adjusted_final_after_tax,
         "duration_proxy": min(max(years_to_maturity * 0.75, 0.1), years_to_maturity),
         "interest_rate_risk_flag": "Цена облигации может снизиться при росте ставок.",
         "sell_before_maturity_flag": "Продажа до погашения может дать результат ниже расчётного.",

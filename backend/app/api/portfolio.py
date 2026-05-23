@@ -7,6 +7,7 @@ from app.converters import result_to_jsonable
 from investment_lab.engine.portfolio_calculator import portfolio_metrics
 from investment_lab.engine.scenario_comparator import analyze_scenarios
 from investment_lab.domain.models import ScenarioAssumptions, UserConstraints
+from investment_lab.data.legal_texts import API_DISCLAIMER
 
 router = APIRouter()
 
@@ -20,22 +21,28 @@ def portfolio_check(req: PortfolioCheckRequest):
     rows = req.positions
     if not rows:
         raise HTTPException(status_code=422, detail='Добавьте хотя бы одну позицию портфеля')
-    required_fields = {"name", "asset_class", "market_value"}
+    normalized_rows = []
     for idx, row in enumerate(rows):
-        if not required_fields.issubset(row.keys()):
-            raise HTTPException(status_code=422, detail=f'Позиция #{idx + 1} заполнена неполно')
-        if not str(row.get("name", "")).strip():
-            raise HTTPException(status_code=422, detail=f'Позиция #{idx + 1}: название не заполнено')
-        if not str(row.get("asset_class", "")).strip():
+        instrument = str(row.get('instrument') or '').strip()
+        legacy_name = str(row.get('name') or '').strip()
+        normalized_name = instrument or legacy_name
+        if not normalized_name:
+            raise HTTPException(status_code=422, detail=f'Позиция #{idx + 1}: заполните instrument или name')
+        if not str(row.get('asset_class', '')).strip():
             raise HTTPException(status_code=422, detail=f'Позиция #{idx + 1}: класс актива не заполнен')
         try:
-            market_value = float(row.get("market_value"))
+            market_value = float(row.get('market_value'))
         except (TypeError, ValueError):
             raise HTTPException(status_code=422, detail=f'Позиция #{idx + 1}: market_value должен быть числом')
         if market_value <= 0:
             raise HTTPException(status_code=422, detail=f'Позиция #{idx + 1}: market_value должен быть больше 0')
-    metrics = portfolio_metrics(rows)
-    df = pd.DataFrame(rows)
+        normalized = dict(row)
+        normalized['instrument'] = normalized_name
+        normalized['name'] = normalized_name
+        normalized_rows.append(normalized)
+
+    metrics = portfolio_metrics(normalized_rows)
+    df = pd.DataFrame(normalized_rows)
     scenario = analyze_scenarios(df, ScenarioAssumptions(**req.assumptions), UserConstraints(**req.constraints)) if not df.empty else {}
     sj = result_to_jsonable(scenario)
     summary = (sj.get('summary') or [{}])[0] if sj.get('summary') else {}
@@ -49,7 +56,7 @@ def portfolio_check(req: PortfolioCheckRequest):
     if weighted_vol > max_vol:
         weak_points.append(f"Взвешенная волатильность выше лимита: {weighted_vol:.1f}% > {max_vol:.1f}%")
     if not weak_points:
-        weak_points.append("Критичные замечания по заданным ограничениям не выявлены.")
+        weak_points.append('Критичные замечания по заданным ограничениям не выявлены.')
     return {
         'allocation_by_asset_class': sj.get('asset_allocation', []),
         'concentration': {'top1_pct': metrics.get('concentration_top1', 0.0), 'top2_pct': metrics.get('concentration_top2', 0.0)},
@@ -62,5 +69,6 @@ def portfolio_check(req: PortfolioCheckRequest):
         'weak_points': weak_points,
         'cashflows': [],
         'summary': summary,
-        'limitations': sj.get('limitations', ['Оценка основана на пользовательском вводе.'])
+        'limitations': sj.get('limitations', ['Оценка основана на пользовательском вводе.']),
+        'disclaimer': API_DISCLAIMER,
     }

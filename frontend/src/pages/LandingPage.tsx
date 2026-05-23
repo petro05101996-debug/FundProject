@@ -22,7 +22,7 @@ const scenarioRows = [
   ['Налоги (оценка)', '12,4%', 'в год'],
 ];
 
-export default function LandingPage({ onStart, onExplain }: { onStart: () => void; onExplain: () => void }) {
+export default function LandingPage({ onStart, onExplain, onOfferCheck }: { onStart: () => void; onExplain: () => void; onOfferCheck: () => void }) {
   return (
     <LandingShell>
       <div className='mock-stage'>
@@ -53,6 +53,7 @@ export default function LandingPage({ onStart, onExplain }: { onStart: () => voi
               <div className='row hero-actions'>
                 <button className='btn' onClick={onStart}><TrendingUp size={15} />Начать проверку сценария</button>
                 <button className='btn ghost' onClick={onExplain}><Scale size={15} />Сравнить мои варианты</button>
+                <button className='btn ghost' onClick={onOfferCheck}><Scale size={15} />Проверить предложение из банка/брокера/Telegram</button>
               </div>
               <div className='mini-tags'>
                 <span><Lock size={14} />Данные остаются только у вас</span>
