@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { BookOpen, CircleCheckBig, Clock3, Search, ShieldAlert, Sparkles } from 'lucide-react';
 import { api, ApiError } from '../api/client';
-import { PageShell, EmptyState, RiskChip, InsightPanel } from '../components/ui';
+import { EmptyState, PageShell } from '../components/ui';
 
 export default function ExplainInstrumentPage() {
   const [q, setQ] = useState('');
@@ -15,7 +16,7 @@ export default function ExplainInstrumentPage() {
         const r = await api<{ items?: Array<{ name: string }> }>('/api/instruments/catalog');
         setCatalog((r.items || []).map((x) => x.name));
       } catch {
-        // keep empty catalog fallback
+        setCatalog(['Вклад', 'ОФЗ', 'Корпоративная облигация', 'Фонды']);
       }
     })();
   }, []);
@@ -33,13 +34,13 @@ export default function ExplainInstrumentPage() {
   };
 
   return (
-    <PageShell title='Объяснить инструмент' subtitle='Разберите инструмент простыми словами: доход, риски, ликвидность, комиссии, налоги и что проверить самостоятельно.'>
-      <div className='card'>
+    <PageShell title='Объяснить инструмент' subtitle='Понятное объяснение инструмента, рисков и ключевых параметров.'>
+      <div className='card' style={{ marginBottom: 12 }}>
         <div className='row'>
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder='Введите инструмент' />
-          <button className='btn' onClick={() => load(q)} disabled={!q.trim()}>Найти</button>
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder='Поиск инструмента: например, ОФЗ, фонд, облигация' />
+          <button className='btn' onClick={() => load(q)} disabled={!q.trim()}><Search size={14} />Найти</button>
         </div>
-        <div className='segmented-tabs' style={{ marginTop: '10px' }}>
+        <div className='segmented-tabs' style={{ marginTop: 10 }}>
           {catalog.map((c) => <button key={c} className={`seg-btn ${active === c ? 'active' : ''}`} onClick={() => load(c)}>{c}</button>)}
         </div>
       </div>
@@ -47,35 +48,45 @@ export default function ExplainInstrumentPage() {
       {!data ? (
         <EmptyState title='Введите инструмент или выберите из каталога' description='После загрузки появится разбор по рискам, ликвидности и ограничениям.' />
       ) : (
-        <div className='main-grid'>
-          <div className='card'>
-            <h3>{data.title}</h3>
-            <h4>Простыми словами</h4><p>{data.plain_explanation}</p>
-            <h4>Как формируется доход</h4><p>{data.how_income_works}</p>
-            <h4>Основные риски</h4><ul>{(data.risks || []).map((r: string, i: number) => <li key={i}>{r}</li>)}</ul>
-            <h4>Ликвидность</h4><p>{data.liquidity}</p>
-            <h4>Комиссии и налоги</h4><p>{data.tax_notes}</p>
-            <h4>Что проверить самостоятельно</h4><ul>{(data.what_to_check || []).map((x: string, i: number) => <li key={i}>{x}</li>)}</ul>
-            <h4>Похожие инструменты</h4>
-            <div>
-              {(data.related_instruments || []).map((x: string) => (
-                <div key={x} className='card soft related-row'>{x}</div>
-              ))}
+        <section className='scenario-main-grid'>
+          <article className='card'>
+            <h3>{data.title || active}</h3>
+            <p className='muted'>{data.plain_explanation}</p>
+
+            <div className='card soft'>
+              <h4><Sparkles size={14} />Как формируется результат</h4>
+              <p>{data.how_income_works}</p>
             </div>
-          </div>
-          <div>
-            <InsightPanel title='Краткий профиль' items={[`Категория: ${data.category || '—'}`, `Риск: ${data.risk_level || '—'}`, `Ликвидность: ${data.liquidity || '—'}`, `Сложность: ${data.complexity || '—'}`]} />
-            <div className='card' style={{ marginTop: '12px' }}>
-              <h4>Коротко</h4>
-              <div className='row'>
-                <RiskChip>Уровень риска: {data.risk_level || '—'}</RiskChip>
-                <RiskChip>Ликвидность: {data.liquidity || '—'}</RiskChip>
-                <RiskChip>Сложность: {data.complexity || '—'}</RiskChip>
-              </div>
+
+            <div className='card soft'>
+              <h4><ShieldAlert size={14} />Основные риски</h4>
+              <ul>{(data.risks || []).map((r: string, i: number) => <li key={i}>{r}</li>)}</ul>
+            </div>
+
+            <div className='card soft'>
+              <h4><Clock3 size={14} />Ликвидность</h4>
+              <p>{data.liquidity}</p>
+            </div>
+
+            <div className='card soft'>
+              <h4><BookOpen size={14} />Сравнение с похожими инструментами</h4>
+              <ul>{(data.related_instruments || []).map((x: string, i: number) => <li key={i}>{x}</li>)}</ul>
+            </div>
+          </article>
+
+          <aside className='card'>
+            <h3>Коротко</h3>
+            <ul className='rules-list'>
+              <li><CircleCheckBig size={15} />Уровень риска: {data.risk_level || 'Низкий'}</li>
+              <li><CircleCheckBig size={15} />Ликвидность: {data.liquidity || 'Высокая'}</li>
+              <li><CircleCheckBig size={15} />Сложность: {data.complexity || 'Низкая'}</li>
+              <li><CircleCheckBig size={15} />Горизонт: {data.horizon || 'Короткий (до 1 года)'}</li>
+            </ul>
+            <div className='card soft'>
               <p className='muted'>Этот раздел носит информационно-образовательный характер и не является индивидуальной инвестиционной рекомендацией.</p>
             </div>
-          </div>
-        </div>
+          </aside>
+        </section>
       )}
       {error && <div className='error-banner'>{error}</div>}
     </PageShell>

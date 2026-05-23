@@ -1,5 +1,14 @@
 import React from 'react';
 import { AppHeader, AppSidebar } from './ui';
-type PageKey = 'landing'|'profile'|'instrument'|'builder'|'portfolio'|'results'|'report'|'explain';
-const groups=[{title:'Старт',items:[{key:'profile',label:'Параметры сценария'}]},{title:'Анализ',items:[{key:'instrument',label:'Проверить инструмент'},{key:'builder',label:'Сравнить варианты'},{key:'portfolio',label:'Проверить портфель'}]},{title:'Итоги',items:[{key:'results',label:'Итоги анализа'},{key:'report',label:'Отчёт'}]},{title:'Справка',items:[{key:'explain',label:'Объяснить инструмент'}]}];
-export default function AppShell({children,page,onNavigate}:{children:React.ReactNode;page:PageKey;onNavigate:(k:PageKey)=>void}){return <div className='app-shell'><AppHeader onStart={()=>onNavigate('instrument')}/><div className='workspace-top card soft'><div className='row'><span className='muted'>Рабочее пространство</span><span className='pill'>Основной проект</span></div><div className='row'><span className='pill'>Ад</span><span className='muted'>Аналитик</span></div></div><div className='layout'><AppSidebar groups={groups as any} page={page} onNavigate={onNavigate}/><main className='app-content'>{children}</main></div></div>}
+
+type PageKey = 'landing' | 'profile' | 'instrument' | 'builder' | 'portfolio' | 'results' | 'report' | 'explain';
+
+const groups = [
+  { title: 'АНАЛИЗ', items: [{ key: 'profile', label: 'Параметры сценария' }, { key: 'instrument', label: 'Проверить инструмент' }, { key: 'builder', label: 'Сравнить варианты' }, { key: 'portfolio', label: 'Проверить портфель' }] },
+  { title: 'ИТОГИ', items: [{ key: 'results', label: 'Итог по сценариям' }, { key: 'report', label: 'Прозрачный отчёт' }] },
+  { title: 'СПРАВКА', items: [{ key: 'explain', label: 'Объяснить инструмент' }] },
+];
+
+export default function AppShell({ children, page, onNavigate }: { children: React.ReactNode; page: PageKey; onNavigate: (k: PageKey) => void }) {
+  return <div className='app-shell dark-shell'><AppHeader onStart={() => onNavigate('instrument')} /><div className='layout'><AppSidebar groups={groups as any} page={page} onNavigate={onNavigate} /><main className='app-content'>{children}</main></div></div>;
+}

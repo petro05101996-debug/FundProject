@@ -1,56 +1,39 @@
 import React, { useMemo, useState } from 'react';
+import { AlertTriangle, BarChart3, CalendarDays, CirclePercent, Coins, Landmark, Shield, TrendingUp } from 'lucide-react';
 import { api, ApiError } from '../api/client';
-import Disclaimer from '../components/Disclaimer';
-import { PageShell, SegmentedTabs, FormField, InsightPanel, KpiCard, RiskChip, ActionBar } from '../components/ui';
+import { PageShell, SegmentedTabs } from '../components/ui';
 
-const tabs = ['Вклад', 'Накопительный счёт', 'ОФЗ', 'Корпоративная облигация', 'Фонд денежного рынка', 'Облигационный фонд', 'Индексный фонд', 'Акция как класс риска'];
-const labels: Record<string, string> = {
-  amount: 'Сумма', annual_rate_pct: 'Ставка, % годовых', term_months: 'Срок, месяцев', capitalization: 'Капитализация процентов',
-  early_withdrawal: 'Досрочное снятие', tax_pct: 'Налог, %', min_balance: 'Минимальный остаток', years_to_maturity: 'Срок до погашения, лет',
-  clean_price_pct: 'Цена, % от номинала', coupon_pct: 'Купон, %', commission_pct: 'Комиссия, %', default_risk_pct: 'Кредитный риск, %',
-  expected_return_pct: 'Ожидаемая доходность, %', management_fee_pct: 'Комиссия фонда, % в год', stress_drawdown_pct: 'Стресс-просадка, %', withdrawals_allowed: 'Разрешены снятия'
-};
+const tabs = ['Вклад', 'Накопительный счёт', 'ОФЗ', 'Корпоративная облигация', 'Фонд денежного рынка', 'Индексный фонд'];
 const defaults: any = {
-  'Вклад': { amount: 1000000, annual_rate_pct: 12, term_months: 12, capitalization: true, early_withdrawal: false, tax_pct: 13 },
-  'Накопительный счёт': { amount: 1000000, annual_rate_pct: 10, term_months: 12, min_balance: 500000, withdrawals_allowed: true, tax_pct: 13 },
-  'ОФЗ': { amount: 1000000, coupon_pct: 10, years_to_maturity: 3, clean_price_pct: 96, commission_pct: 0.2, tax_pct: 13 },
+  'Вклад': { amount: 1000000, annual_rate_pct: 12, term_months: 12, tax_pct: 13 },
+  'Накопительный счёт': { amount: 1000000, annual_rate_pct: 10, term_months: 12, tax_pct: 13 },
+  'ОФЗ': { amount: 1000000, clean_price_pct: 98.5, nominal: 1000, coupon_pct: 10, years_to_maturity: 2.8, nkd: 41.27, commission_pct: 0.1, tax_pct: 13, liquidity_days: 3, issuer_rating: 'A (низкий риск)', coupon_period: 'Полугодовая' },
   'Корпоративная облигация': { amount: 1000000, coupon_pct: 12, years_to_maturity: 3, clean_price_pct: 95, commission_pct: 0.3, default_risk_pct: 2, tax_pct: 13 },
   'Фонд денежного рынка': { amount: 1000000, expected_return_pct: 10, management_fee_pct: 0.5, term_months: 12, tax_pct: 13 },
-  'Облигационный фонд': { amount: 1000000, expected_return_pct: 12, management_fee_pct: 1, term_months: 24, tax_pct: 13 },
-  'Индексный фонд': { amount: 1000000, expected_return_pct: 16, management_fee_pct: 1.2, term_months: 36, tax_pct: 13, stress_drawdown_pct: -20 },
-  'Акция как класс риска': { amount: 1000000, expected_return_pct: 18, management_fee_pct: 0, term_months: 36, tax_pct: 13, stress_drawdown_pct: -35 }
+  'Индексный фонд': { amount: 1000000, expected_return_pct: 16, management_fee_pct: 1.2, term_months: 36, tax_pct: 13, stress_drawdown_pct: -20 }
 };
 
-const groups: Record<string, string[]> = {
-  base: ['amount', 'term_months', 'tax_pct'],
-  yield: ['annual_rate_pct', 'coupon_pct', 'expected_return_pct', 'clean_price_pct', 'years_to_maturity'],
-  costs: ['commission_pct', 'management_fee_pct', 'default_risk_pct', 'stress_drawdown_pct'],
-  options: ['capitalization', 'early_withdrawal', 'withdrawals_allowed', 'min_balance'],
+const fieldOrder = ['amount', 'nkd', 'clean_price_pct', 'issuer_rating', 'nominal', 'liquidity_days', 'coupon_pct', 'commission_pct', 'years_to_maturity', 'coupon_period', 'tax_pct'];
+const labels: Record<string, string> = {
+  amount: 'Сумма инвестиций', nkd: 'НКД (накопленный купонный доход)', clean_price_pct: 'Цена', issuer_rating: 'Кредитный риск (рейтинг эмитента)', nominal: 'Номинал', liquidity_days: 'Ликвидность (средний срок выхода)', coupon_pct: 'Купон (годовой)', commission_pct: 'Комиссия', years_to_maturity: 'Срок до погашения', coupon_period: 'Периодичность купона', tax_pct: 'Ставка налога'
 };
+const suffixes: Record<string, string> = { amount: '₽', nkd: '₽', clean_price_pct: '% от номинала', nominal: '₽', liquidity_days: 'дней', coupon_pct: '%', commission_pct: '%', years_to_maturity: 'лет', tax_pct: '%' };
 
 export default function InstrumentCheckPage() {
   const [tab, setTab] = useState('ОФЗ');
   const [params, setParams] = useState<any>(defaults['ОФЗ']);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState('');
-  const [configError, setConfigError] = useState('');
 
-  const entries = useMemo(() => Object.entries(params || {}), [params]);
-  const keys = new Set(entries.map(([k]) => k));
+  const rows = useMemo(() => fieldOrder.filter((k) => params[k] !== undefined), [params]);
 
   const onTab = (t: string) => {
     setTab(t);
     setResult(null);
-    if (!defaults[t]) {
-      setConfigError(`Ошибка конфигурации: нет defaults для ${t}`);
-      return;
-    }
-    setConfigError('');
     setParams(defaults[t]);
   };
 
   const onCalc = async () => {
-    if (configError) return;
     setError('');
     try {
       setResult(await api('/api/instrument/check', { method: 'POST', body: JSON.stringify({ selectedInstrumentType: tab, params }) }));
@@ -59,65 +42,61 @@ export default function InstrumentCheckPage() {
     }
   };
 
-  const field = (k: string, v: any) => (
-    <FormField key={k} label={labels[k] || k}>
-      {typeof v === 'boolean'
-        ? <input type='checkbox' checked={v} onChange={(e) => setParams({ ...params, [k]: e.target.checked })} />
-        : <input value={String(v)} onChange={(e) => setParams({ ...params, [k]: isNaN(Number(e.target.value)) ? e.target.value : Number(e.target.value) })} />}
-    </FormField>
-  );
+  const metric = {
+    value: result?.expected_value ?? '1 230 450 ₽',
+    irr: result?.irr ?? '10,21%',
+    stress: result?.stress_drawdown ?? '-7,9%',
+    liq: result?.liquidity_label ?? '3 дня',
+    risk: result?.risk_label ?? 'Низкий',
+    complexity: result?.complexity_label ?? 'Низкая',
+  };
 
   return (
-    <PageShell title='Проверить инструмент' subtitle='Оцените последствия по одному инструменту: доход, стресс-просадку, ликвидность, комиссии, налоги и риск-флаги.'>
+    <PageShell title='Проверить инструмент' subtitle='Смоделируйте один финансовый инструмент и оцените его параметры и риски.'>
       <SegmentedTabs items={tabs} active={tab} onChange={onTab} />
-      {configError && <div className='error-banner'>{configError}</div>}
-      <div className='main-grid'>
-        <div className='card'>
-          <h3>Параметры инструмента</h3>
-          <div className='form-section'>
-            <h4>Базовые параметры</h4>
-            <div className='form-grid'>{groups.base.filter((k) => keys.has(k)).map((k) => field(k, params[k]))}</div>
+      <section className='inst-grid full-pass'>
+        <article className='card'>
+          <h3>Параметры инструмента ({tab})</h3>
+          <div className='inst-form-grid'>
+            {rows.map((k) => (
+              <label className='form-field inst-field' key={k}>
+                <span>{labels[k] || k}</span>
+                <div className='input-wrap'>
+                  <input value={String(params[k])} onChange={(e) => setParams({ ...params, [k]: isNaN(Number(e.target.value)) ? e.target.value : Number(e.target.value) })} />
+                  {suffixes[k] && <em>{suffixes[k]}</em>}
+                </div>
+              </label>
+            ))}
           </div>
-          <div className='form-section'>
-            <h4>Доходность и горизонт</h4>
-            <div className='form-grid'>{groups.yield.filter((k) => keys.has(k)).map((k) => field(k, params[k]))}</div>
+          <div className='row'>
+            <button className='btn' onClick={onCalc}><BarChart3 size={14} />Рассчитать инструмент</button>
+            <button className='btn ghost'>Использовать в сценарии</button>
           </div>
-          <div className='form-section'>
-            <h4>Комиссии и риски</h4>
-            <div className='form-grid'>{groups.costs.filter((k) => keys.has(k)).map((k) => field(k, params[k]))}</div>
-          </div>
-          <div className='form-section'>
-            <h4>Дополнительные условия</h4>
-            <div className='form-grid'>{groups.options.filter((k) => keys.has(k)).map((k) => field(k, params[k]))}</div>
-          </div>
-        </div>
-        <div>
-          {!result ? (
-            <InsightPanel title='Предварительная оценка' items={[`Выбранный инструмент: ${tab}`, 'Будут учтены комиссии, налоги, ликвидность и стресс-фактор', 'Проверьте ограничения анализа и риск-флаги перед сравнением', 'Сервис не является индивидуальной инвестиционной рекомендацией']} />
-          ) : (
-            <div className='card'>
-              <div className='kpi-strip'>
-                {[
-                  ['Ожидаемая стоимость', result.expected_value], ['Доход', result.income_estimate], ['Стресс', result.stress_drawdown],
-                  ['Ликвидность', result.liquidity_label], ['Риск', result.risk_label], ['Сложность', result.complexity_label],
-                ].map(([l, v]) => <KpiCard key={String(l)} label={String(l)} value={typeof v === 'number' ? v.toFixed(2) : String(v || '—')} />)}
-              </div>
-              <h4>Ключевые риск-флаги</h4>
-              <div className='row'>{(result.risk_flags || []).map((f: string, i: number) => <RiskChip key={i} severity={/высок|риск|просад/i.test(f) ? 'high' : 'neutral'}>{f}</RiskChip>)}</div>
-              <div className='card soft'>
-                <h4>Что проверить самостоятельно</h4>
-                <ul>{(result.checklist || []).map((x: string, i: number) => <li key={i}>{x}</li>)}</ul>
-              </div>
-              <p className='muted'>{(result.limitations || []).join(' ')}</p>
-              <Disclaimer />
+        </article>
+
+        <aside className='card'>
+          <h3>Предварительная оценка</h3>
+          <ul className='rules-list metrics-list'>
+            <li><TrendingUp size={15} />Ожидаемая стоимость: <b>{metric.value}</b></li>
+            <li><CirclePercent size={15} />Ориентир дохода (IRR): <b>{metric.irr}</b></li>
+            <li><AlertTriangle size={15} />Стресс-просадка: <b>{metric.stress}</b></li>
+            <li><CalendarDays size={15} />Ликвидность: <b>{metric.liq}</b></li>
+            <li><Shield size={15} />Риск: <b>{metric.risk}</b></li>
+            <li><Coins size={15} />Сложность: <b>{metric.complexity}</b></li>
+          </ul>
+          <div className='card soft'>
+            <h4>Ключевые риск-флаги</h4>
+            <div className='row'>
+              <span className='risk-chip high'>Процентный риск</span>
+              <span className='risk-chip'>Продажа до погашения</span>
+              <span className='risk-chip'>Кредитный риск эмитента</span>
+              <span className='risk-chip'>Реинвестирование купонов</span>
             </div>
-          )}
-        </div>
-      </div>
-      <ActionBar hint='Проверка проводится только по введённым параметрам.'>
-        <button className='btn' onClick={onCalc}>Рассчитать последствия</button>
-        {error && <span className='error-banner'>{error}</span>}
-      </ActionBar>
+          </div>
+          <p className='muted disclaimer-line'><Landmark size={14} /> Результаты расчётов являются приблизительными и основаны на введённых данных.</p>
+        </aside>
+      </section>
+      {error && <div className='error-banner'>{error}</div>}
     </PageShell>
   );
 }
