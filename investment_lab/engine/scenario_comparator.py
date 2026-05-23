@@ -14,7 +14,18 @@ import pandas as pd
 from investment_lab.data.legal_texts import LIMITATIONS
 from investment_lab.domain.enums import RiskFlagCode, Severity
 from investment_lab.domain.models import ScenarioAssumptions, UserConstraints, missing_columns, normalize_asset_class, status_for_score
+from investment_lab.domain.asset_classes import is_known_asset_class
 from investment_lab.engine.risk_flags import make_flag
+from investment_lab.engine.methodology import build_methodology
+from investment_lab.engine.validation import ValidationIssue
+from investment_lab.engine.result_contract import (
+    ASSET_ALLOCATION_FIELDS,
+    FLAG_FIELDS,
+    POSITION_FIELDS,
+    STRESS_FIELDS,
+    SUMMARY_FIELDS,
+    ensure_columns,
+)
 from investment_lab.engine.scoring import complexity_score, liquidity_score, risk_score
 from investment_lab.engine.stress_engine import STRESS_CASES
 
@@ -61,43 +72,45 @@ def analyze_scenarios(
             "assumptions": asdict(assumptions),
             "constraints": asdict(constraints),
             "limitations": limitations(),
+            "methodology": build_methodology(),
         }
 
     positions = _add_position_metrics(prepared, assumptions)
     asset_allocation = _asset_allocation(positions)
-    stress = _stress_table(asset_allocation, assumptions)
+    stress = _stress_table(asset_allocation, positions, assumptions)
     summary = _summary_table(positions, asset_allocation, stress, assumptions, constraints)
     flags = _flags(positions, asset_allocation, stress, summary, constraints, validation_errors)
     summary = _add_safe_statuses(summary, flags)
     leading_constraint_match_scenario = _leading_constraint_match(summary)
 
     return {
-        "summary": summary,
-        "positions": positions,
-        "asset_allocation": asset_allocation,
-        "stress": stress,
-        "flags": flags,
+        "summary": ensure_columns(summary, SUMMARY_FIELDS),
+        "positions": ensure_columns(positions, POSITION_FIELDS),
+        "asset_allocation": ensure_columns(asset_allocation, ASSET_ALLOCATION_FIELDS),
+        "stress": ensure_columns(stress, STRESS_FIELDS),
+        "flags": ensure_columns(flags, FLAG_FIELDS),
         "leading_constraint_match_scenario": leading_constraint_match_scenario,
         "best_fit_scenario": leading_constraint_match_scenario,
         "assumptions": asdict(assumptions),
         "constraints": asdict(constraints),
         "limitations": limitations(),
+        "methodology": build_methodology(),
     }
 
 
 def prepare_instruments(
     instruments: pd.DataFrame,
     assumptions: ScenarioAssumptions,
-) -> tuple[pd.DataFrame, list[str]]:
+) -> tuple[pd.DataFrame, list[ValidationIssue]]:
     """Validate and normalize user instrument rows."""
 
-    errors: list[str] = []
+    errors: list[ValidationIssue] = []
     if instruments is None or instruments.empty:
-        return pd.DataFrame(), ["Добавьте хотя бы один инструмент для расчёта."]
+        return pd.DataFrame(), [ValidationIssue(RiskFlagCode.INSUFFICIENT_DATA.value, Severity.ERROR.value, "Добавьте хотя бы один инструмент для расчёта.")]
 
     missing = missing_columns(instruments.columns)
     if missing:
-        errors.append(f"Отсутствуют обязательные колонки: {', '.join(missing)}.")
+        errors.append(ValidationIssue(RiskFlagCode.INSUFFICIENT_DATA.value, Severity.ERROR.value, f"Отсутствуют обязательные колонки: {', '.join(missing)}."))
 
     df = instruments.copy()
     for column in missing:
@@ -113,7 +126,13 @@ def prepare_instruments(
     for column, default in text_defaults.items():
         df[column] = df[column].fillna(default).astype(str).str.strip().replace("", default)
 
-    df["asset_class"] = df["asset_class"].map(normalize_asset_class)
+    original_asset_class = df.get("raw_asset_class", df["asset_class"]).astype(str).fillna("")
+    df["asset_class"] = original_asset_class.map(normalize_asset_class)
+    df["asset_class_was_unknown"] = original_asset_class.map(
+        lambda value: bool(str(value).strip()) and not is_known_asset_class(value)
+    )
+    for idx in df[df["asset_class_was_unknown"]].index:
+        errors.append(ValidationIssue(RiskFlagCode.INSUFFICIENT_DATA.value, Severity.INFO.value, "Неизвестный класс актива отнесён к Альтернативным.", int(idx), "asset_class"))
 
     numeric_defaults = {
         "market_value": 0.0,
@@ -132,9 +151,12 @@ def prepare_instruments(
     df["annual_fee_pct"] = df["annual_fee_pct"].clip(lower=0.0)
     df["tax_pct"] = df["tax_pct"].clip(lower=0.0, upper=100.0)
 
+    removed = df[df["market_value"] <= 0]
+    for idx in removed.index:
+        errors.append(ValidationIssue(RiskFlagCode.ZERO_MARKET_VALUES.value, Severity.ERROR.value, "Строка исключена: market_value <= 0.", int(idx), "market_value"))
     df = df[df["market_value"] > 0].reset_index(drop=True)
     if df.empty:
-        errors.append("Все рыночные стоимости равны нулю; введите положительные значения.")
+        errors.append(ValidationIssue(RiskFlagCode.ZERO_MARKET_VALUES.value, Severity.ERROR.value, "Все рыночные стоимости равны нулю; введите положительные значения.", None, "market_value"))
 
     return df, errors
 
@@ -209,6 +231,10 @@ def _summary_table(
         max_asset_class = float(asset_allocation.loc[asset_allocation["scenario"] == scenario, "weight_pct"].max())
         worst_stress = float(stress.loc[stress["scenario"] == scenario, "portfolio_impact_pct"].min())
         ending_value = total * (1 + net_return / 100.0) ** assumptions.horizon_years
+        projected_profit = ending_value - total
+        worst_stress_value = total * worst_stress / 100.0
+        risk_explanation = _build_risk_explanation(scenario, max_position, liquid_30d, worst_stress, constraints)
+        dq_score, dq_label, dq_notes = _data_quality_for_scenario(scenario_positions)
         score = _constraint_score(
             max_position=max_position,
             max_asset_class=max_asset_class,
@@ -226,6 +252,8 @@ def _summary_table(
                 "net_return_pct": net_return,
                 "real_return_pct": real_return,
                 "projected_value": ending_value,
+                "projected_profit": projected_profit,
+                "projected_profit_pct": (ending_value / total - 1) * 100 if total > 0 else 0.0,
                 "volatility_pct": volatility,
                 "liquid_within_30d_pct": liquid_30d,
                 "fee_and_commission_drag_pct": fees + commission_drag,
@@ -233,6 +261,7 @@ def _summary_table(
                 "max_position_pct": max_position,
                 "max_asset_class_pct": max_asset_class,
                 "worst_stress_impact_pct": worst_stress,
+                "worst_stress_value": worst_stress_value,
                 "constraint_fit_score": score,
                 "instrument_count": int(len(scenario_positions)),
                 "risk_score": float(np.dot(weights, scenario_positions["risk_score"])),
@@ -241,12 +270,16 @@ def _summary_table(
                 "liquidity_label": _score_label(float(np.dot(weights, scenario_positions["liquidity_score"])), "Низкая", "Средняя", "Высокая"),
                 "complexity_score": float(np.dot(weights, scenario_positions["complexity_score"])),
                 "complexity_label": _score_label(float(np.dot(weights, scenario_positions["complexity_score"])), "Низкая", "Средняя", "Высокая"),
+                "risk_explanation": risk_explanation,
+                "data_quality_score": dq_score,
+                "data_quality_label": dq_label,
+                "data_quality_notes": dq_notes,
             }
         )
     return pd.DataFrame(rows).sort_values("constraint_fit_score", ascending=False).reset_index(drop=True)
 
 
-def _stress_table(asset_allocation: pd.DataFrame, assumptions: ScenarioAssumptions) -> pd.DataFrame:
+def _stress_table(asset_allocation: pd.DataFrame, positions: pd.DataFrame, assumptions: ScenarioAssumptions) -> pd.DataFrame:
     rows: list[dict[str, float | str]] = []
     for scenario, allocation in asset_allocation.groupby("scenario"):
         for stress_name, shocks in STRESS_SHOCKS.items():
@@ -254,16 +287,25 @@ def _stress_table(asset_allocation: pd.DataFrame, assumptions: ScenarioAssumptio
             for _, row in allocation.iterrows():
                 impact += (row["weight_pct"] / 100.0) * shocks.get(row["asset_class"], shocks["Альтернативные"]) * 100.0
             if assumptions.fx_devaluation_pct != 0:
-                non_base_weight = 0.0
-                # Currency-level detail lives in positions, so this remains a transparent global overlay.
-                non_base_weight = 0.5
+                scenario_positions = positions.loc[positions["scenario"] == scenario]
+                total = float(scenario_positions["market_value"].sum())
+                non_base_value = float(
+                    scenario_positions.loc[
+                        ~scenario_positions["currency"].fillna("RUB").astype(str).str.upper().isin(["RUB", "₽", "БАЗОВАЯ", "BASE"]),
+                        "market_value",
+                    ].sum()
+                )
+                non_base_weight = non_base_value / total if total > 0 else 0.0
                 impact += non_base_weight * assumptions.fx_devaluation_pct
+            scenario_total = float(positions.loc[positions["scenario"] == scenario, "market_value"].sum())
             rows.append(
                 {
                     "scenario": scenario,
                     "stress_case": stress_name,
                     "portfolio_impact_pct": impact,
                     "estimated_value_after_stress_pct": 100.0 + impact,
+                    "estimated_value_after_stress": scenario_total * (1 + impact / 100.0),
+                    "stress_loss_value": min(scenario_total * impact / 100.0, 0.0),
                     "max_drawdown_pct": min(impact, 0.0),
                     "liquidity_degradation_level": 1 if impact < -10 else 0,
                 }
@@ -271,11 +313,10 @@ def _stress_table(asset_allocation: pd.DataFrame, assumptions: ScenarioAssumptio
     return pd.DataFrame(rows)
 
 
-def _validation_flags(validation_errors: list[str]) -> list[dict[str, str]]:
+def _validation_flags(validation_errors: list[ValidationIssue]) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     for error in validation_errors:
-        code = RiskFlagCode.ZERO_MARKET_VALUES if "нул" in error.lower() else RiskFlagCode.INSUFFICIENT_DATA
-        rows.append(make_flag("—", code, Severity.ERROR, "Недостаточно данных", error))
+        rows.append(make_flag("—", error.code, error.severity, "Проблема входных данных", error.message))
     return rows
 
 
@@ -285,7 +326,7 @@ def _flags(
     stress: pd.DataFrame,
     summary: pd.DataFrame,
     constraints: UserConstraints,
-    validation_errors: list[str],
+    validation_errors: list[ValidationIssue],
 ) -> pd.DataFrame:
     rows: list[dict[str, str]] = _validation_flags(validation_errors)
     for _, row in summary.iterrows():
@@ -394,3 +435,37 @@ def _score_label(score: float, low: str, medium: str, high: str) -> str:
     if score <= 3.5:
         return medium
     return high
+
+
+def _build_risk_explanation(scenario: str, max_position: float, liquid_30d: float, worst_stress: float, constraints: UserConstraints) -> str:
+    reasons: list[str] = []
+    if max_position > constraints.max_single_position_pct:
+        reasons.append("высокая концентрация")
+    if liquid_30d < constraints.min_liquidity_pct_30d:
+        reasons.append("низкая ликвидность")
+    if abs(min(worst_stress, 0.0)) > constraints.max_stress_loss_pct:
+        reasons.append("стресс-просадка выше лимита")
+    if not reasons:
+        return "Основные причины риска: критичные отклонения по ограничениям не выявлены."
+    return f"Основные причины риска: {', '.join(reasons)}."
+
+
+def _data_quality_for_scenario(scenario_positions: pd.DataFrame) -> tuple[float, str, str]:
+    score = 100.0
+    notes: list[str] = []
+    if scenario_positions.get("asset_class_was_unknown", pd.Series(dtype=bool)).any():
+        score -= 20
+        notes.append("часть классов активов не распознана")
+    if scenario_positions["currency"].astype(str).str.strip().isin(["", "Базовая"]).any():
+        score -= 10
+        notes.append("по части позиций валюта заполнена по умолчанию")
+    risky = scenario_positions["asset_class"].isin(["Акции", "Альтернативные"])
+    if (risky & (scenario_positions["volatility_pct"] <= 0)).any():
+        score -= 15
+        notes.append("для рискованных активов указана нулевая волатильность")
+    if (scenario_positions["liquidity_days"] >= 365).any():
+        score -= 15
+        notes.append("по части позиций ликвидность заполнена модельным допущением")
+    score = max(0.0, score)
+    label = "Высокая" if score >= 80 else ("Средняя" if score >= 50 else "Низкая")
+    return score, label, ("; ".join(notes) if notes else "Качество расчёта высокое: существенные модельные допущения не применялись.")

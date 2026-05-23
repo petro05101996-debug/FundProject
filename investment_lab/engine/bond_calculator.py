@@ -25,4 +25,15 @@ def calculate_bond(amount: float, accrued_coupon: float, clean_price_pct: float,
         "duration_proxy": min(max(years_to_maturity * 0.75, 0.1), years_to_maturity),
         "interest_rate_risk_flag": "Цена облигации может снизиться при росте ставок.",
         "sell_before_maturity_flag": "Продажа до погашения может дать результат ниже расчётного.",
+        "methodology": {
+            "model_type": "simplified_bond_calculation",
+            "is_simplified": True,
+            "limitations": [
+                "не учитывается полный календарь купонов",
+                "не учитываются оферты",
+                "не учитывается амортизация, если она не введена пользователем",
+                "НКД считается упрощённо",
+                "YTM является приблизительной оценкой",
+            ],
+        },
     }

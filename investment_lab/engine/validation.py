@@ -11,6 +11,8 @@ class ValidationIssue:
     code: str
     severity: str
     message: str
+    row_index: int | None = None
+    field: str | None = None
 
 
 def validate_positive_market_values(rows: list[dict]) -> list[ValidationIssue]:

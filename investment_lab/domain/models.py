@@ -7,24 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Iterable
-
-SUPPORTED_ASSET_CLASSES = (
-    "Акции",
-    "Облигации",
-    "Денежные средства",
-    "Товары",
-    "Недвижимость",
-    "Альтернативные",
-)
-
-LEGACY_ASSET_CLASS_MAP = {
-    "equity": "Акции",
-    "bond": "Облигации",
-    "cash": "Денежные средства",
-    "commodity": "Товары",
-    "real estate": "Недвижимость",
-    "alternative": "Альтернативные",
-}
+from investment_lab.domain.asset_classes import SUPPORTED_ASSET_CLASSES, normalize_asset_class
 
 SAFE_STATUS_LABELS = {
     "fits_constraints": "Лучше соответствует заданным ограничениям",
@@ -156,17 +139,6 @@ def default_portfolio() -> list[dict[str, object]]:
     from investment_lab.data.mockup_metrics import MOCKUP_PORTFOLIO
 
     return [{"scenario": "Текущий портфель", "country": "Пользовательский ввод", "currency": "RUB", **row} for row in MOCKUP_PORTFOLIO]
-
-
-def normalize_asset_class(value: object) -> str:
-    text = str(value or "").strip()
-    lowered = text.lower()
-    if lowered in LEGACY_ASSET_CLASS_MAP:
-        return LEGACY_ASSET_CLASS_MAP[lowered]
-    for option in SUPPORTED_ASSET_CLASSES:
-        if lowered == option.lower():
-            return option
-    return "Альтернативные"
 
 
 def missing_columns(columns: Iterable[str]) -> list[str]:

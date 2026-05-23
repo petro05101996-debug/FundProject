@@ -15,4 +15,13 @@ def calculate_fund(amount: float, expected_return_pct: float, management_fee_pct
         "tracking_error_note": f"Tracking error задан как пользовательское допущение: {tracking_error_pct:.1f}%.",
         "liquidity_note": "Биржевая ликвидность зависит от торгов и маркет-мейкера.",
         "final_after_tax": amount + gross_return - management_fee_drag - tax_drag,
+        "methodology": {
+            "model_type": "simplified_fund_calculation",
+            "is_simplified": True,
+            "limitations": [
+                "результат зависит от пользовательской ожидаемой доходности",
+                "не используются реальные котировки фонда",
+                "комиссии и tracking error задаются упрощённо",
+            ],
+        },
     }

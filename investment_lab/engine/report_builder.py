@@ -38,6 +38,7 @@ class ReportBundle:
 
 
 def build_report_bundle(result: dict) -> ReportBundle:
+    result = result or {}
     return ReportBundle(
         report_id=f"ISL-{uuid4().hex[:10].upper()}",
         created_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
@@ -47,21 +48,25 @@ def build_report_bundle(result: dict) -> ReportBundle:
 
 
 def build_cashflow_table(summary, horizon_years: int):
+    summary = _ensure_dataframe(summary)
     rows = []
-    if summary is None:
+    if summary is None or not hasattr(summary, "iterrows"):
         return _dataframe(rows)
     for _, row in summary.iterrows():
-        previous_value = float(row["portfolio_value"])
+        portfolio_value = float(row.get("portfolio_value", 0) or 0)
+        net_return = float(row.get("net_return_pct", 0) or 0)
+        scenario = row.get("scenario", "Сценарий")
+        previous_value = portfolio_value
         stress_multiplier = 1 + float(row.get("worst_stress_impact_pct", 0)) / 100
         for year in range(horizon_years + 1):
-            value_before_stress = float(row["portfolio_value"]) * (1 + float(row["net_return_pct"]) / 100) ** year
+            value_before_stress = portfolio_value * (1 + net_return / 100) ** year
             income = max(value_before_stress - previous_value, 0) if year else 0.0
             fees = value_before_stress * float(row.get("fee_and_commission_drag_pct", 0)) / 100 if year else 0.0
             taxes = value_before_stress * float(row.get("tax_drag_pct", 0)) / 100 if year else 0.0
             rows.append({
-                "scenario": row["scenario"],
+                "scenario": scenario,
                 "year": year,
-                "contributions": float(row["portfolio_value"]) if year == 0 else 0.0,
+                "contributions": portfolio_value if year == 0 else 0.0,
                 "additional_contributions": 0.0,
                 "income": income,
                 "fees": fees,
@@ -74,15 +79,19 @@ def build_cashflow_table(summary, horizon_years: int):
 
 
 def export_html_report(result: dict) -> str:
-    bundle = build_report_bundle(result)
+    return export_html_report_from_bundle(build_report_bundle(result or {}))
+
+
+def export_html_report_from_bundle(bundle: ReportBundle) -> str:
+    result = bundle.result or {}
     constraints_html = _dict_to_html(result.get("constraints", {}))
     assumptions_html = _dict_to_html(result.get("assumptions", {}))
     positions_html = _table_to_html(result.get("positions"))
-    summary = result.get("summary")
+    summary = _safe_get_table(result, "summary")
     summary_html = _table_to_html(user_summary_table(summary))
-    flags = result.get("flags")
+    flags = _safe_get_table(result, "flags")
     flags_html = _table_to_html(flags)
-    stress_html = _table_to_html(result.get("stress"))
+    stress_html = _table_to_html(_safe_get_table(result, "stress"))
     cashflows = build_cashflow_table(summary, int(result.get("assumptions", {}).get("horizon_years", 5)))
     cashflows_html = _table_to_html(user_cashflow_table(cashflows))
     limitations = "".join(f"<li>{escape(str(item))}</li>" for item in result.get("limitations", []))
@@ -209,7 +218,8 @@ def _sort_summary_by_fit(summary):
 
 
 def _table_to_html(table) -> str:
-    if table is None:
+    table = _ensure_dataframe(table)
+    if table is None or (hasattr(table, "empty") and table.empty):
         return "<p>Данные отсутствуют.</p>"
     if hasattr(table, "to_html"):
         return table.to_html(index=False, escape=True)
@@ -217,11 +227,48 @@ def _table_to_html(table) -> str:
 
 
 def _dict_to_html(data: dict) -> str:
-    rows = "".join(f"<tr><th>{escape(str(key))}</th><td>{escape(str(value))}</td></tr>" for key, value in data.items())
+    rows = "".join(f"<tr><th>{escape(str(key))}</th><td>{_value_to_html(value)}</td></tr>" for key, value in data.items())
     return f"<table><tbody>{rows}</tbody></table>"
+
+
+def _value_to_html(value) -> str:
+    if isinstance(value, dict):
+        return _dict_to_html(value)
+    if isinstance(value, list):
+        items = "".join(f"<li>{escape(str(item))}</li>" for item in value)
+        return f"<ul>{items}</ul>"
+    return escape(str(value))
 
 
 def _dataframe(rows: list[dict]):
     if pd is None:
         return rows
     return pd.DataFrame(rows)
+
+
+def _ensure_dataframe(value):
+    if value is None:
+        return _dataframe([])
+    if pd is not None and isinstance(value, pd.DataFrame):
+        return value
+    if isinstance(value, list):
+        return _dataframe(value)
+    if isinstance(value, dict):
+        return _dataframe([value])
+    return _dataframe([{"value": value}])
+
+
+def _ensure_records(value):
+    if value is None:
+        return []
+    if pd is not None and isinstance(value, pd.DataFrame):
+        return value.to_dict(orient="records")
+    if isinstance(value, list):
+        return [item for item in value if isinstance(item, dict)]
+    if isinstance(value, dict):
+        return [value]
+    return []
+
+
+def _safe_get_table(result: dict, key: str):
+    return _ensure_dataframe((result or {}).get(key))

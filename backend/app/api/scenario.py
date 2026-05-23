@@ -6,6 +6,7 @@ from investment_lab.domain.models import ScenarioAssumptions, UserConstraints
 from investment_lab.engine.scenario_comparator import analyze_scenarios
 from app.converters import records_to_dataframe, result_to_jsonable
 from app.schemas import ScenarioAnalyzeRequest
+from investment_lab.domain.models import normalize_asset_class
 
 router = APIRouter()
 
@@ -16,6 +17,12 @@ def analyze(req: ScenarioAnalyzeRequest):
     constraints = UserConstraints(**req.constraints.model_dump())
     result = analyze_scenarios(df, assumptions=assumptions, constraints=constraints)
     payload = result_to_jsonable(result)
+    for row in payload.get("summary", []):
+        if row.get("worst_stress_value") is None and row.get("portfolio_value") is not None and row.get("worst_stress_impact_pct") is not None:
+            row["worst_stress_value"] = float(row["portfolio_value"]) * float(row["worst_stress_impact_pct"]) / 100
+        # Backward compatibility only. New UI must use projected_value.
+        if row.get("expected_final_value") is None and row.get("projected_value") is not None:
+            row["expected_final_value"] = row.get("projected_value")
     payload['assumptions'] = asdict(assumptions.normalized())
     payload['constraints'] = asdict(constraints.normalized())
     return payload
@@ -37,11 +44,9 @@ class WhatIfRequest(BaseModel):
 
 def _target_share_for_class(asset_class: str, wf: WhatIfPayload) -> float | None:
     if asset_class == 'Денежные средства':
-        return wf.deposit_share_pct
+        return wf.deposit_share_pct + wf.fund_share_pct
     if asset_class == 'Облигации':
         return wf.ofz_share_pct
-    if asset_class in {'Фонды денежного рынка', 'Смешанные фонды'}:
-        return wf.fund_share_pct
     if asset_class == 'Акции':
         return wf.equity_share_pct
     return None
@@ -58,7 +63,7 @@ def what_if(req: WhatIfRequest):
         total_value = sum(float(p.get('market_value', 0)) for p in positions) or 1.0
         grouped: dict[str, list[dict]] = {}
         for p in positions:
-            grouped.setdefault(str(p.get('asset_class', 'Другое')), []).append(p)
+            grouped.setdefault(normalize_asset_class(p.get('asset_class', 'Другое')), []).append(p)
         for ac, rows in grouped.items():
             target = _target_share_for_class(ac, req.what_if)
             if target is None:
@@ -70,7 +75,7 @@ def what_if(req: WhatIfRequest):
                 r['market_value'] = max(0.0, float(r.get('market_value', 0)) * scale)
 
     for p in positions:
-        ac = str(p.get('asset_class', ''))
+        ac = normalize_asset_class(p.get('asset_class', ''))
         if 'Акции' in ac:
             p['expected_return_pct'] = float(p.get('expected_return_pct', 0)) + req.what_if.equity_market_shock_pct
             p['volatility_pct'] = float(p.get('volatility_pct', 0)) + abs(req.what_if.equity_market_shock_pct) / 2
@@ -100,4 +105,14 @@ def what_if(req: WhatIfRequest):
         'stress': wf.get('stress', []),
         'liquidity': w.get('liquid_within_30d_pct', 0),
         'limitations': ['Технический what-if использует упрощённое перераспределение пользовательских позиций и не является прогнозом рынка.'],
+        'methodology': {
+            'type': 'simplified_sensitivity_model',
+            'description': 'Расчёт показывает чувствительность пользовательского сценария к изменению допущений. Это не прогноз рынка и не инвестиционная рекомендация.',
+            'limitations': [
+                'Не используются реальные рыночные котировки',
+                'Не моделируется полная кривая ставок',
+                'Корреляции и стресс-параметры являются упрощёнными',
+                'Результат зависит от пользовательских вводных',
+            ],
+        },
     }
